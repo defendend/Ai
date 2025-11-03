@@ -26,16 +26,13 @@ class ChatUI {
     private val sendBtn: HTMLButtonElement
     private val newChatBtn: HTMLButtonElement
     private val chatHistoryList: HTMLDivElement
+    private val providerSelect: HTMLSelectElement
 
     private val claudeApiKeyInput: HTMLInputElement
     private val saveClaudeKeyBtn: HTMLButtonElement
-    private val claudeKeyContainer: HTMLElement
-    private val claudeProviderRadio: HTMLInputElement
 
     private val deepseekApiKeyInput: HTMLInputElement
     private val saveDeepseekKeyBtn: HTMLButtonElement
-    private val deepseekKeyContainer: HTMLElement
-    private val deepseekProviderRadio: HTMLInputElement
 
     init {
         // Load API keys
@@ -51,16 +48,13 @@ class ChatUI {
         sendBtn = document.getElementById("sendBtn") as HTMLButtonElement
         newChatBtn = document.getElementById("newChatBtn") as HTMLButtonElement
         chatHistoryList = document.getElementById("chatHistoryList") as HTMLDivElement
+        providerSelect = document.getElementById("providerSelect") as HTMLSelectElement
 
         claudeApiKeyInput = document.getElementById("claudeApiKeyInput") as HTMLInputElement
         saveClaudeKeyBtn = document.getElementById("saveClaudeKeyBtn") as HTMLButtonElement
-        claudeKeyContainer = document.getElementById("claudeKeyContainer") as HTMLElement
-        claudeProviderRadio = document.getElementById("claudeProvider") as HTMLInputElement
 
         deepseekApiKeyInput = document.getElementById("deepseekApiKeyInput") as HTMLInputElement
         saveDeepseekKeyBtn = document.getElementById("saveDeepseekKeyBtn") as HTMLButtonElement
-        deepseekKeyContainer = document.getElementById("deepseekKeyContainer") as HTMLElement
-        deepseekProviderRadio = document.getElementById("deepseekProvider") as HTMLInputElement
 
         // Set saved API keys
         if (claudeKey.isNotEmpty()) claudeApiKeyInput.value = claudeKey
@@ -92,8 +86,10 @@ class ChatUI {
 
         newChatBtn.onclick = { createNewChat(); null }
 
-        claudeProviderRadio.onclick = { switchProvider("claude"); null }
-        deepseekProviderRadio.onclick = { switchProvider("deepseek"); null }
+        providerSelect.onchange = {
+            currentProvider = providerSelect.value
+            null
+        }
 
         saveClaudeKeyBtn.onclick = {
             localStorage.setItem("claude_api_key", claudeApiKeyInput.value)
@@ -107,20 +103,6 @@ class ChatUI {
             deepseekClient.updateApiKey(deepseekApiKeyInput.value)
             console.log("DeepSeek API key saved!")
             null
-        }
-    }
-
-    private fun switchProvider(provider: String) {
-        currentProvider = provider
-        when (provider) {
-            "claude" -> {
-                claudeKeyContainer.style.display = "flex"
-                deepseekKeyContainer.style.display = "none"
-            }
-            "deepseek" -> {
-                claudeKeyContainer.style.display = "none"
-                deepseekKeyContainer.style.display = "flex"
-            }
         }
     }
 
@@ -151,12 +133,8 @@ class ChatUI {
         currentMessages = chat.messages.toMutableList()
         currentProvider = chat.provider
 
-        // Update provider radio
-        when (chat.provider) {
-            "claude" -> claudeProviderRadio.checked = true
-            "deepseek" -> deepseekProviderRadio.checked = true
-        }
-        switchProvider(chat.provider)
+        // Update provider select
+        providerSelect.value = chat.provider
 
         renderMessages()
         renderChatHistory()

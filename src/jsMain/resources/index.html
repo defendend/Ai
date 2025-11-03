@@ -19,29 +19,27 @@
             <div class="chat-container">
                 <div class="chat-header">
                 <h1>AI Chat</h1>
-                <div class="provider-selector">
-                    <label>
-                        <input type="radio" name="provider" value="claude" id="claudeProvider" checked>
-                        Claude AI
-                    </label>
-                    <label>
-                        <input type="radio" name="provider" value="deepseek" id="deepseekProvider">
-                        DeepSeek
-                    </label>
-                </div>
-                <div class="api-key-container" id="claudeKeyContainer">
-                    <input type="password" id="claudeApiKeyInput" placeholder="Enter Claude API Key">
-                    <button id="saveClaudeKeyBtn">Save Claude Key</button>
-                </div>
-                <div class="api-key-container" id="deepseekKeyContainer" style="display: none;">
-                    <input type="password" id="deepseekApiKeyInput" placeholder="Enter DeepSeek API Key">
-                    <button id="saveDeepseekKeyBtn">Save DeepSeek Key</button>
+                <div class="api-keys-section">
+                    <div class="api-key-container">
+                        <input type="password" id="claudeApiKeyInput" placeholder="Claude API Key">
+                        <button id="saveClaudeKeyBtn" class="save-key-btn">Save</button>
+                    </div>
+                    <div class="api-key-container">
+                        <input type="password" id="deepseekApiKeyInput" placeholder="DeepSeek API Key">
+                        <button id="saveDeepseekKeyBtn" class="save-key-btn">Save</button>
+                    </div>
                 </div>
             </div>
             <div id="messagesContainer" class="messages-container"></div>
             <div class="input-container">
                 <textarea id="messageInput" placeholder="Type your message here..." rows="3"></textarea>
-                <button id="sendBtn">Send</button>
+                <div class="input-controls">
+                    <select id="providerSelect" class="provider-select">
+                        <option value="claude">Claude AI</option>
+                        <option value="deepseek">DeepSeek</option>
+                    </select>
+                    <button id="sendBtn">Send</button>
+                </div>
             </div>
         </div>
         </div>
