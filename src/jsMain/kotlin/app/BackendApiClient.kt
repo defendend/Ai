@@ -171,6 +171,33 @@ class BackendApiClient {
         }
     }
 
+    suspend fun updateChatTitle(chatId: Int, title: String): Result<Unit> {
+        return try {
+            val escapedTitle = title.replace("\"", "\\\"")
+            val requestBody = """{"title":"$escapedTitle"}"""
+
+            val response = window.fetch(
+                "$baseUrl/api/chats/$chatId",
+                RequestInit(
+                    method = "PATCH",
+                    headers = Headers().apply {
+                        append("Content-Type", "application/json")
+                    },
+                    body = requestBody
+                )
+            ).await()
+
+            if (!response.ok) {
+                val errorText = response.text().await()
+                return Result.failure(Exception("Failed to update chat title: $errorText"))
+            }
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun sendMessage(chatId: Int, content: String): Result<List<MessageResponse>> {
         return try {
             val requestBody = json.encodeToString(

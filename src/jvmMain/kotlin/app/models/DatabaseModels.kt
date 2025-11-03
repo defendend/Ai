@@ -87,7 +87,8 @@ data class CreateChatRequest(
 
 @Serializable
 data class UpdateChatRequest(
-    val provider: String
+    val provider: String? = null,
+    val title: String? = null
 )
 
 @Serializable

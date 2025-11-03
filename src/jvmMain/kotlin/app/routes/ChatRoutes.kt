@@ -78,7 +78,7 @@ fun Route.chatRoutes() {
             }
         }
 
-        // Update chat provider
+        // Update chat (provider and/or title)
         patch("/{chatId}") {
             val chatId = call.parameters["chatId"]?.toIntOrNull()
             val request = call.receive<UpdateChatRequest>()
@@ -88,13 +88,19 @@ fun Route.chatRoutes() {
                 return@patch
             }
 
+            if (request.provider == null && request.title == null) {
+                call.respond(HttpStatusCode.BadRequest, ErrorResponse("At least one field (provider or title) must be provided"))
+                return@patch
+            }
+
             try {
                 val updated = dbQuery {
                     val existing = Chats.select { Chats.id eq chatId }.singleOrNull()
                     if (existing == null) return@dbQuery false
 
                     Chats.update({ Chats.id eq chatId }) {
-                        it[provider] = request.provider
+                        request.provider?.let { newProvider -> it[provider] = newProvider }
+                        request.title?.let { newTitle -> it[title] = newTitle }
                     } > 0
                 }
 

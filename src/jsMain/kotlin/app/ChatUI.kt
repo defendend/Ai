@@ -302,21 +302,85 @@ class ChatUI {
             val chatItem = document.createElement("div") as HTMLDivElement
             chatItem.className = "chat-history-item" + if (chat.id == currentChatId) " active" else ""
 
+            val titleContainer = document.createElement("div") as HTMLDivElement
+            titleContainer.className = "chat-history-item-title-container"
+
             val title = document.createElement("div") as HTMLDivElement
             title.className = "chat-history-item-title"
             title.textContent = chat.title
+
+            val editBtn = document.createElement("button") as HTMLButtonElement
+            editBtn.className = "chat-edit-btn"
+            editBtn.textContent = "✏️"
+            editBtn.onclick = { event ->
+                event.stopPropagation()
+                startEditingChatTitle(chat.id, title)
+                null
+            }
+
+            titleContainer.appendChild(title)
+            titleContainer.appendChild(editBtn)
 
             val preview = document.createElement("div") as HTMLDivElement
             preview.className = "chat-history-item-preview"
             preview.textContent = "${chat.provider} • Click to view"
 
-            chatItem.appendChild(title)
+            chatItem.appendChild(titleContainer)
             chatItem.appendChild(preview)
 
             chatItem.onclick = { switchToChat(chat.id); null }
 
             chatHistoryList.appendChild(chatItem)
         }
+    }
+
+    private fun startEditingChatTitle(chatId: Int, titleElement: HTMLDivElement) {
+        val currentTitle = titleElement.textContent ?: ""
+
+        val input = document.createElement("input") as HTMLInputElement
+        input.type = "text"
+        input.value = currentTitle
+        input.className = "chat-title-edit-input"
+
+        val finishEdit = {
+            val newTitle = input.value.trim()
+            if (newTitle.isNotEmpty() && newTitle != currentTitle) {
+                scope.launch {
+                    val result = apiClient.updateChatTitle(chatId, newTitle)
+                    result.fold(
+                        onSuccess = {
+                            val chatIndex = chats.indexOfFirst { it.id == chatId }
+                            if (chatIndex != -1) {
+                                chats[chatIndex] = chats[chatIndex].copy(title = newTitle)
+                            }
+                            renderChatHistory()
+                        },
+                        onFailure = { error ->
+                            console.error("Failed to update chat title", error)
+                            showError("Failed to update title: ${error.message}")
+                            renderChatHistory()
+                        }
+                    )
+                }
+            } else {
+                renderChatHistory()
+            }
+        }
+
+        input.onblur = { finishEdit(); null }
+        input.onkeydown = { event ->
+            if (event is org.w3c.dom.events.KeyboardEvent) {
+                when (event.key) {
+                    "Enter" -> finishEdit()
+                    "Escape" -> renderChatHistory()
+                }
+            }
+            null
+        }
+
+        titleElement.parentElement?.replaceChild(input, titleElement)
+        input.focus()
+        input.select()
     }
 
     private fun showError(errorMessage: String) {

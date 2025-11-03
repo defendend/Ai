@@ -90,13 +90,50 @@ body {
     border-color: #667eea;
 }
 
+.chat-history-item-title-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
 .chat-history-item-title {
     font-weight: 600;
     color: #333;
-    margin-bottom: 4px;
+    flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.chat-edit-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    font-size: 14px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    flex-shrink: 0;
+}
+
+.chat-history-item:hover .chat-edit-btn {
+    opacity: 1;
+}
+
+.chat-edit-btn:hover {
+    transform: scale(1.2);
+}
+
+.chat-title-edit-input {
+    width: 100%;
+    padding: 4px 8px;
+    border: 2px solid #667eea;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    outline: none;
 }
 
 .chat-history-item-preview {
