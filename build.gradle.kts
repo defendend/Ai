@@ -94,7 +94,7 @@ tasks.register<Jar>("fatJar") {
     with(tasks.getByName("jvmJar") as CopySpec)
 }
 
-tasks.named("jvmJar") {
+tasks.named<Jar>("jvmJar") {
     manifest {
         attributes["Main-Class"] = "app.ApplicationKt"
     }
