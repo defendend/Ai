@@ -1,78 +1,140 @@
-# AI Chat - Kotlin Multiplatform Web App
+# AI Chat - Kotlin Multiplatform
 
-Веб-приложение для общения с Claude AI, созданное на Kotlin Multiplatform с поддержкой JS.
+Чат-приложение с поддержкой Claude AI и DeepSeek, построенное на Kotlin Multiplatform.
 
-## Возможности
+## Архитектура
 
-- Интерфейс чата для общения с Claude AI
-- Сохранение API ключа в localStorage
-- Современный и отзывчивый UI
-- Поддержка истории сообщений
-- Работа с Anthropic API
-
-## Требования
-
-- JDK 11 или выше
-- API ключ Anthropic (получить на https://console.anthropic.com/)
-
-## Запуск проекта
-
-1. Склонируйте репозиторий
-2. Запустите development сервер:
-   ```bash
-   ./gradlew jsBrowserDevelopmentRun --continuous
-   ```
-
-3. Откройте браузер на `http://localhost:8080`
-4. Введите ваш API ключ Anthropic в поле в верхней части страницы
-5. Начните общение с Claude!
-
-## Сборка для продакшена
-
-```bash
-./gradlew jsBrowserProductionWebpack
-```
-
-Собранные файлы будут в `build/distributions/`
+- **Frontend**: Kotlin/JS с DOM API
+- **Backend**: Ktor (Kotlin/JVM)
+- **Database**: PostgreSQL с Exposed ORM
+- **Общий код**: Модели данных в `commonMain`
 
 ## Структура проекта
 
 ```
-src/jsMain/
-├── kotlin/app/
-│   ├── Main.kt              # Точка входа
-│   ├── ChatUI.kt            # UI логика
-│   ├── AnthropicClient.kt   # API клиент
-│   └── Models.kt            # Модели данных
-└── resources/
-    ├── index.html           # HTML страница
-    └── styles.css           # Стили
+├── src/
+│   ├── commonMain/        # Общий код для фронтенда и бэкенда
+│   │   └── kotlin/app/
+│   │       └── Models.kt  # Модели данных
+│   │
+│   ├── jsMain/           # Frontend (Kotlin/JS)
+│   │   ├── kotlin/app/
+│   │   └── resources/
+│   │       ├── index.html
+│   │       └── styles.css
+│   │
+│   └── jvmMain/          # Backend (Ktor)
+│       ├── kotlin/app/
+│       │   ├── Application.kt
+│       │   ├── routes/
+│       │   ├── services/
+│       │   ├── database/
+│       │   └── models/
+│       └── resources/
+│           └── logback.xml
 ```
 
-## Деплой на defendend.dev
+## Требования
 
-**ВАЖНО:** Для статического сайта НЕ нужен платный хостинг!
+- JDK 17+
+- PostgreSQL 14+
+- Gradle 8.5+
 
-### Инструкции по деплою:
+## Настройка бэкенда
 
-- **[REGRU_SETUP.md](REGRU_SETUP.md)** - Для домена на Рег.ру (бесплатный Vercel/Cloudflare)
-- **[YANDEX_CLOUD_SETUP.md](YANDEX_CLOUD_SETUP.md)** - Если есть сервер в Яндекс Облаке
-- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Все варианты деплоя
+### 1. Установка PostgreSQL
 
-### Рекомендуемые платформы:
+```bash
+# Ubuntu/Debian
+sudo apt-get install postgresql postgresql-contrib
 
-**Бесплатные:**
-- **Vercel** - проще всего, автоматический SSL
-- **Cloudflare Pages** - самый быстрый CDN
-- **GitHub Pages** - простой и надежный
-- **Netlify** - популярный вариант
+# macOS
+brew install postgresql
+brew services start postgresql
+```
 
-**Свой сервер:**
-- **Яндекс Облако** - если уже есть VPS (~500₽/мес)
+### 2. Создание базы данных
 
-## Технологии
+```bash
+# Войти в PostgreSQL
+sudo -u postgres psql
 
-- Kotlin/JS
-- Kotlinx Coroutines
-- Kotlinx Serialization
-- Anthropic Claude API
+# Создать базу данных и пользователя
+CREATE DATABASE aichat;
+CREATE USER aichat WITH ENCRYPTED PASSWORD 'aichat';
+GRANT ALL PRIVILEGES ON DATABASE aichat TO aichat;
+\q
+```
+
+### 3. Настройка переменных окружения
+
+Создайте файл `.env` или установите переменные окружения:
+
+```bash
+# Database
+export DATABASE_URL="jdbc:postgresql://localhost:5432/aichat"
+export DATABASE_USER="aichat"
+export DATABASE_PASSWORD="aichat"
+
+# API Keys
+export CLAUDE_API_KEY="your-claude-api-key"
+export DEEPSEEK_API_KEY="your-deepseek-api-key"
+
+# JWT Secret
+export JWT_SECRET="your-secure-jwt-secret-change-in-production"
+```
+
+### 4. Запуск бэкенда локально
+
+```bash
+# Собрать и запустить
+./gradlew run
+
+# Или через отдельные команды
+./gradlew jvmJar
+java -jar build/libs/ai-chat-jvm-1.0.0.jar
+```
+
+Backend будет доступен на `http://localhost:8080`
+
+## API Endpoints
+
+### Authentication
+
+**POST** `/api/auth/register`
+```json
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+```
+
+**POST** `/api/auth/login`
+```json
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+```
+
+## Gradle Tasks
+
+```bash
+# Frontend
+./gradlew jsBrowserProductionWebpack # Production build
+
+# Backend
+./gradlew jvmJar                     # Собрать JAR
+./gradlew run                        # Запустить локально
+
+# All
+./gradlew build                      # Собрать всё
+```
+
+## TODO
+
+- [ ] Добавить JWT middleware для защиты API
+- [ ] Реализовать rate limiting
+- [ ] Обновить фронтенд для работы с новым API
+- [ ] Миграции базы данных
+- [ ] Тесты
