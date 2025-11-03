@@ -171,6 +171,29 @@ class BackendApiClient {
         }
     }
 
+    suspend fun deleteChat(chatId: Int): Result<Unit> {
+        return try {
+            val response = window.fetch(
+                "$baseUrl/api/chats/$chatId",
+                RequestInit(
+                    method = "DELETE",
+                    headers = Headers().apply {
+                        append("Content-Type", "application/json")
+                    }
+                )
+            ).await()
+
+            if (!response.ok) {
+                val errorText = response.text().await()
+                return Result.failure(Exception("Failed to delete chat: $errorText"))
+            }
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun updateChatTitle(chatId: Int, title: String): Result<Unit> {
         return try {
             val escapedTitle = title.replace("\"", "\\\"")

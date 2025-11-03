@@ -106,23 +106,30 @@ body {
     white-space: nowrap;
 }
 
-.chat-edit-btn {
+.chat-edit-btn,
+.chat-delete-btn {
     background: none;
     border: none;
     cursor: pointer;
     padding: 4px;
     font-size: 14px;
     opacity: 0;
-    transition: opacity 0.2s;
+    transition: all 0.2s;
     flex-shrink: 0;
 }
 
-.chat-history-item:hover .chat-edit-btn {
+.chat-history-item:hover .chat-edit-btn,
+.chat-history-item:hover .chat-delete-btn {
     opacity: 1;
 }
 
 .chat-edit-btn:hover {
     transform: scale(1.2);
+}
+
+.chat-delete-btn:hover {
+    transform: scale(1.2);
+    filter: brightness(1.2);
 }
 
 .chat-title-edit-input {

@@ -9,6 +9,8 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.statements.DeleteStatement
+import org.jetbrains.exposed.sql.transactions.TransactionManager
 
 fun Route.chatRoutes() {
     route("/api/chats") {
@@ -111,6 +113,37 @@ fun Route.chatRoutes() {
                 }
             } catch (e: Exception) {
                 call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Failed to update chat: ${e.message}"))
+            }
+        }
+
+        // Delete chat
+        delete("/{chatId}") {
+            val chatIdParam = call.parameters["chatId"]?.toIntOrNull()
+
+            if (chatIdParam == null) {
+                call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid chat ID"))
+                return@delete
+            }
+
+            try {
+                dbQuery {
+                    // First check if chat exists
+                    val chatExists = Chats.select { Chats.id eq chatIdParam }.count() > 0
+
+                    if (chatExists) {
+                        // Delete all messages in the chat
+                        TransactionManager.current().exec("DELETE FROM messages WHERE chat_id = $chatIdParam")
+
+                        // Then delete the chat itself
+                        TransactionManager.current().exec("DELETE FROM chats WHERE id = $chatIdParam")
+
+                        call.respond(HttpStatusCode.OK, mapOf("success" to true))
+                    } else {
+                        call.respond(HttpStatusCode.NotFound, ErrorResponse("Chat not found"))
+                    }
+                }
+            } catch (e: Exception) {
+                call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Failed to delete chat: ${e.message}"))
             }
         }
 

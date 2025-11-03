@@ -318,8 +318,18 @@ class ChatUI {
                 null
             }
 
+            val deleteBtn = document.createElement("button") as HTMLButtonElement
+            deleteBtn.className = "chat-delete-btn"
+            deleteBtn.textContent = "🗑️"
+            deleteBtn.onclick = { event ->
+                event.stopPropagation()
+                confirmDeleteChat(chat.id, chat.title)
+                null
+            }
+
             titleContainer.appendChild(title)
             titleContainer.appendChild(editBtn)
+            titleContainer.appendChild(deleteBtn)
 
             val preview = document.createElement("div") as HTMLDivElement
             preview.className = "chat-history-item-preview"
@@ -331,6 +341,44 @@ class ChatUI {
             chatItem.onclick = { switchToChat(chat.id); null }
 
             chatHistoryList.appendChild(chatItem)
+        }
+    }
+
+    private fun confirmDeleteChat(chatId: Int, chatTitle: String) {
+        val confirmed = kotlinx.browser.window.confirm("Are you sure you want to delete \"$chatTitle\"? This action cannot be undone.")
+
+        if (confirmed) {
+            scope.launch {
+                try {
+                    val result = apiClient.deleteChat(chatId)
+                    result.fold(
+                        onSuccess = {
+                            // Remove chat from local list
+                            chats.removeAll { it.id == chatId }
+
+                            // If deleted chat was currently selected, switch to another chat
+                            if (currentChatId == chatId) {
+                                if (chats.isNotEmpty()) {
+                                    switchToChat(chats.first().id)
+                                } else {
+                                    createNewChat()
+                                }
+                            } else {
+                                renderChatHistory()
+                            }
+
+                            console.log("Chat $chatId deleted successfully")
+                        },
+                        onFailure = { error ->
+                            console.error("Failed to delete chat", error)
+                            showError("Failed to delete chat: ${error.message}")
+                        }
+                    )
+                } catch (e: Exception) {
+                    console.error("Error deleting chat", e)
+                    showError("Error deleting chat: ${e.message}")
+                }
+            }
         }
     }
 
