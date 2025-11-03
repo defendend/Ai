@@ -21,3 +21,6 @@ node_modules/
 
 # Compiled Kotlin/JS
 *.js.map
+
+# Deploy script with credentials
+deploy-local.sh

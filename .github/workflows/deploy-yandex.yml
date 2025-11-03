@@ -1,0 +1,39 @@
+name: Deploy to Yandex Cloud
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Build project
+        run: ./gradlew jsBrowserProductionWebpack --no-daemon
+
+      - name: Deploy to server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "build/dist/js/productionExecutable/*"
+          target: "/var/www/defendend.dev"
+          strip_components: 4
+          rm: true
+
+      - name: Notify
+        if: success()
+        run: echo "✅ Deployed to https://defendend.dev"
