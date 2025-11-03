@@ -33,6 +33,23 @@
                 </div>
             </div>
         </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div id="deleteModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Delete Chat</h2>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete "<span id="deleteChatTitle"></span>"?</p>
+                    <p class="modal-warning">This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button id="cancelDeleteBtn" class="modal-btn modal-btn-cancel">Cancel</button>
+                    <button id="confirmDeleteBtn" class="modal-btn modal-btn-delete">Delete</button>
+                </div>
+            </div>
+        </div>
         </div>
     </div>
     <script src="ai-chat.js"></script>
