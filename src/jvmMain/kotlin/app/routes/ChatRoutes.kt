@@ -78,6 +78,36 @@ fun Route.chatRoutes() {
             }
         }
 
+        // Update chat provider
+        patch("/{chatId}") {
+            val chatId = call.parameters["chatId"]?.toIntOrNull()
+            val request = call.receive<UpdateChatRequest>()
+
+            if (chatId == null) {
+                call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid chat ID"))
+                return@patch
+            }
+
+            try {
+                val updated = dbQuery {
+                    val existing = Chats.select { Chats.id eq chatId }.singleOrNull()
+                    if (existing == null) return@dbQuery false
+
+                    Chats.update({ Chats.id eq chatId }) {
+                        it[provider] = request.provider
+                    } > 0
+                }
+
+                if (updated) {
+                    call.respond(HttpStatusCode.OK, mapOf("success" to true))
+                } else {
+                    call.respond(HttpStatusCode.NotFound, ErrorResponse("Chat not found"))
+                }
+            } catch (e: Exception) {
+                call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Failed to update chat: ${e.message}"))
+            }
+        }
+
         // Get chat with messages
         get("/{chatId}") {
             val chatId = call.parameters["chatId"]?.toIntOrNull()

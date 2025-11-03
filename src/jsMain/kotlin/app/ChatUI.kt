@@ -63,7 +63,33 @@ class ChatUI {
         newChatBtn.onclick = { createNewChat(); null }
 
         providerSelect.onchange = {
-            currentProvider = providerSelect.value
+            val newProvider = providerSelect.value
+            currentProvider = newProvider
+
+            // Update provider in database if chat is open
+            val chatId = currentChatId
+            if (chatId != null) {
+                scope.launch {
+                    val result = apiClient.updateChatProvider(chatId, newProvider)
+                    result.fold(
+                        onSuccess = {
+                            // Update local chat data
+                            val chatIndex = chats.indexOfFirst { it.id == chatId }
+                            if (chatIndex != -1) {
+                                chats[chatIndex] = chats[chatIndex].copy(provider = newProvider)
+                                renderChatHistory()
+                            }
+                            console.log("Provider updated to $newProvider")
+                        },
+                        onFailure = { error ->
+                            console.error("Failed to update provider", error)
+                            showError("Failed to update provider: ${error.message}")
+                            // Revert the selection
+                            providerSelect.value = chats.find { it.id == chatId }?.provider ?: newProvider
+                        }
+                    )
+                }
+            }
             null
         }
     }

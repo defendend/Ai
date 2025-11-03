@@ -114,6 +114,32 @@ class BackendApiClient {
         }
     }
 
+    suspend fun updateChatProvider(chatId: Int, provider: String): Result<Unit> {
+        return try {
+            val requestBody = """{"provider":"$provider"}"""
+
+            val response = window.fetch(
+                "$baseUrl/api/chats/$chatId",
+                RequestInit(
+                    method = "PATCH",
+                    headers = Headers().apply {
+                        append("Content-Type", "application/json")
+                    },
+                    body = requestBody
+                )
+            ).await()
+
+            if (!response.ok) {
+                val errorText = response.text().await()
+                return Result.failure(Exception("Failed to update chat provider: $errorText"))
+            }
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun sendMessage(chatId: Int, content: String): Result<List<MessageResponse>> {
         return try {
             val requestBody = json.encodeToString(
