@@ -1,6 +1,7 @@
 package app
 
 import kotlinx.browser.document
+import kotlinx.browser.window
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -369,7 +370,7 @@ class ChatUI {
                                 content = assistantMsg.content
                             )
                             currentMessages.add(localMsg)
-                            displayMessage(localMsg)
+                            displayMessageAnimated(localMsg)
 
                             // Update chat title from first message
                             if (currentMessages.size <= 2) {
@@ -439,6 +440,41 @@ class ChatUI {
 
         messagesContainer.appendChild(messageDiv)
         messagesContainer.scrollTop = messagesContainer.scrollHeight.toDouble()
+    }
+
+    private fun displayMessageAnimated(message: LocalMessage) {
+        val messageDiv = document.createElement("div") as HTMLDivElement
+        messageDiv.className = "message ${message.role}"
+
+        val avatar = document.createElement("div") as HTMLDivElement
+        avatar.className = "message-avatar"
+        avatar.textContent = if (message.role == "user") "U" else "AI"
+
+        val contentDiv = document.createElement("div") as HTMLDivElement
+        contentDiv.className = "message-content"
+        contentDiv.textContent = ""
+
+        messageDiv.appendChild(avatar)
+        messageDiv.appendChild(contentDiv)
+
+        messagesContainer.appendChild(messageDiv)
+        messagesContainer.scrollTop = messagesContainer.scrollHeight.toDouble()
+
+        // Animate text appearance
+        val fullText = message.content
+        var currentIndex = 0
+        val typingSpeed = 20 // milliseconds per character
+
+        var intervalId: Int? = null
+        intervalId = window.setInterval({
+            if (currentIndex < fullText.length) {
+                currentIndex++
+                contentDiv.textContent = fullText.substring(0, currentIndex)
+                messagesContainer.scrollTop = messagesContainer.scrollHeight.toDouble()
+            } else {
+                intervalId?.let { window.clearInterval(it) }
+            }
+        }, typingSpeed)
     }
 
     private fun renderChatHistory() {
