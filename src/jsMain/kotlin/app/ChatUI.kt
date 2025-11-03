@@ -172,6 +172,43 @@ class ChatUI {
 
         messagesContainer.innerHTML = ""
         renderChatHistory()
+
+        // Load messages from server
+        scope.launch {
+            try {
+                showLoading("Loading messages...")
+                val result = apiClient.getChatWithMessages(chatId)
+
+                result.fold(
+                    onSuccess = { messageResponses ->
+                        currentMessages.clear()
+                        messageResponses.forEach { msgResponse ->
+                            val localMsg = LocalMessage(
+                                role = msgResponse.role,
+                                content = msgResponse.content
+                            )
+                            currentMessages.add(localMsg)
+                        }
+                        hideLoading()
+                        renderMessages()
+                    },
+                    onFailure = { error ->
+                        console.error("Failed to load messages", error)
+                        hideLoading()
+                        showError("Failed to load messages: ${error.message}")
+                    }
+                )
+            } catch (e: Exception) {
+                console.error("Error loading messages", e)
+                hideLoading()
+                showError("Error loading messages: ${e.message}")
+            }
+        }
+    }
+
+    private fun renderMessages() {
+        messagesContainer.innerHTML = ""
+        currentMessages.forEach { displayMessage(it) }
     }
 
     private fun handleSendMessage() {

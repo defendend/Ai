@@ -4,6 +4,7 @@ import kotlinx.browser.window
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import org.w3c.fetch.Headers
 import org.w3c.fetch.RequestInit
 import kotlin.js.json
@@ -109,6 +110,36 @@ class BackendApiClient {
             val text = response.text().await()
             val chat = json.decodeFromString<ChatResponse>(text)
             Result.success(chat)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getChatWithMessages(chatId: Int): Result<List<MessageResponse>> {
+        return try {
+            val response = window.fetch(
+                "$baseUrl/api/chats/$chatId",
+                RequestInit(
+                    method = "GET",
+                    headers = Headers().apply {
+                        append("Content-Type", "application/json")
+                    }
+                )
+            ).await()
+
+            if (!response.ok) {
+                val errorText = response.text().await()
+                return Result.failure(Exception("Failed to fetch chat messages: $errorText"))
+            }
+
+            val text = response.text().await()
+
+            // Backend returns ChatWithMessagesDTO, extract messages array
+            val chatData = json.parseToJsonElement(text).jsonObject
+            val messagesJson = chatData["messages"]?.toString() ?: "[]"
+            val messages = json.decodeFromString<List<MessageResponse>>(messagesJson)
+
+            Result.success(messages)
         } catch (e: Exception) {
             Result.failure(e)
         }
