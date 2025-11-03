@@ -107,42 +107,6 @@
 
 ---
 
-## ⚡ Вариант 3: Cloudflare Pages
-
-### Шаги:
-
-1. **Залейте код на GitHub**
-   ```bash
-   git add .
-   git commit -m "Ready for deployment"
-   git push origin main
-   ```
-
-2. **Зарегистрируйтесь на Cloudflare**
-   - https://dash.cloudflare.com/sign-up
-   - Добавьте домен `defendend.dev`
-   - Следуйте инструкциям по смене nameservers
-
-3. **Создайте Pages проект**
-   - Pages → Create a project
-   - Connect to Git → Выберите репозиторий
-   - Build settings:
-     - Build command: `./gradlew jsBrowserProductionWebpack`
-     - Build output directory: `build/dist/js/productionExecutable`
-     - Environment variables: `JAVA_VERSION = 17`
-
-4. **Настройте кастомный домен**
-   - В проекте → Custom domains
-   - Добавьте `defendend.dev`
-   - DNS настроится автоматически (т.к. домен уже в Cloudflare)
-
-5. **Готово!**
-   - Самый быстрый CDN
-   - Автоматический SSL
-   - Автодеплой при push
-
----
-
 ## 🌐 Вариант 4: Netlify
 
 ### Шаги:
