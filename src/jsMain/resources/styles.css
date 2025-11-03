@@ -132,17 +132,6 @@ body {
     filter: brightness(1.2);
 }
 
-.chat-title-edit-input {
-    width: 100%;
-    padding: 4px 8px;
-    border: 2px solid #667eea;
-    border-radius: 4px;
-    font-size: 14px;
-    font-weight: 600;
-    font-family: inherit;
-    outline: none;
-}
-
 .chat-history-item-preview {
     font-size: 12px;
     color: #666;
@@ -529,4 +518,46 @@ body {
 
 .modal-btn-delete:active {
     transform: translateY(0);
+}
+
+.modal-btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.modal-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.modal-btn-primary:active {
+    transform: translateY(0);
+}
+
+.modal-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #333;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.modal-input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 15px;
+    font-family: inherit;
+    transition: border-color 0.3s;
+}
+
+.modal-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.modal-input::placeholder {
+    color: #999;
 }

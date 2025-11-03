@@ -63,6 +63,10 @@ object Localization {
             "modal.deleteWarning" to "This action cannot be undone.",
             "modal.cancelButton" to "Cancel",
             "modal.deleteButton" to "Delete",
+            "modal.renameTitle" to "Rename Chat",
+            "modal.renameLabel" to "New chat name:",
+            "modal.renamePlaceholder" to "Enter chat name...",
+            "modal.renameButton" to "Rename",
 
             // Messages
             "message.loading" to "Loading...",
@@ -104,6 +108,10 @@ object Localization {
             "modal.deleteWarning" to "Это действие нельзя отменить.",
             "modal.cancelButton" to "Отмена",
             "modal.deleteButton" to "Удалить",
+            "modal.renameTitle" to "Переименовать чат",
+            "modal.renameLabel" to "Новое название чата:",
+            "modal.renamePlaceholder" to "Введите название чата...",
+            "modal.renameButton" to "Переименовать",
 
             // Messages
             "message.loading" to "Загрузка...",

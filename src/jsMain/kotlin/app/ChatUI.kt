@@ -39,8 +39,14 @@ class ChatUI {
     private val deleteChatTitle: HTMLSpanElement
     private val confirmDeleteBtn: HTMLButtonElement
     private val cancelDeleteBtn: HTMLButtonElement
+    private val renameModal: HTMLDivElement
+    private val renameChatInput: HTMLInputElement
+    private val confirmRenameBtn: HTMLButtonElement
+    private val cancelRenameBtn: HTMLButtonElement
+    private val chatHeaderTitle: HTMLHeadingElement
 
     private var chatToDelete: Int? = null
+    private var chatToRename: Int? = null
 
     init {
         // Get DOM elements
@@ -54,6 +60,11 @@ class ChatUI {
         deleteChatTitle = document.getElementById("deleteChatTitle") as HTMLSpanElement
         confirmDeleteBtn = document.getElementById("confirmDeleteBtn") as HTMLButtonElement
         cancelDeleteBtn = document.getElementById("cancelDeleteBtn") as HTMLButtonElement
+        renameModal = document.getElementById("renameModal") as HTMLDivElement
+        renameChatInput = document.getElementById("renameChatInput") as HTMLInputElement
+        confirmRenameBtn = document.getElementById("confirmRenameBtn") as HTMLButtonElement
+        cancelRenameBtn = document.getElementById("cancelRenameBtn") as HTMLButtonElement
+        chatHeaderTitle = document.querySelector(".chat-header h1") as HTMLHeadingElement
 
         setupEventListeners()
         updateUITexts()
@@ -122,12 +133,45 @@ class ChatUI {
             }
             null
         }
+
+        // Rename modal event listeners
+        confirmRenameBtn.onclick = {
+            handleConfirmRename()
+            null
+        }
+
+        cancelRenameBtn.onclick = {
+            hideRenameModal()
+            null
+        }
+
+        renameModal.onclick = { event ->
+            // Close modal if clicked outside the modal content
+            if (event.target == renameModal) {
+                hideRenameModal()
+            }
+            null
+        }
+
+        // Handle Enter key in rename input
+        renameChatInput.onkeydown = { event ->
+            if (event is org.w3c.dom.events.KeyboardEvent) {
+                when (event.key) {
+                    "Enter" -> {
+                        event.preventDefault()
+                        handleConfirmRename()
+                    }
+                    "Escape" -> {
+                        event.preventDefault()
+                        hideRenameModal()
+                    }
+                }
+            }
+            null
+        }
     }
 
     private fun updateUITexts() {
-        // Update header
-        (document.querySelector(".chat-header h1") as? HTMLElement)?.textContent = Localization.t("app.title")
-
         // Update sidebar
         newChatBtn.textContent = Localization.t("sidebar.newChat")
         (document.getElementById("recentChatsTitle") as? HTMLElement)?.textContent = Localization.t("sidebar.recentChats")
@@ -142,11 +186,26 @@ class ChatUI {
         deepseekOption?.textContent = Localization.t("provider.deepseek")
         claudeOption?.textContent = Localization.t("provider.claude")
 
-        // Update modal
+        // Update delete modal
         (deleteModal.querySelector(".modal-header h2") as? HTMLElement)?.textContent = Localization.t("modal.deleteTitle")
         (deleteModal.querySelector(".modal-warning") as? HTMLElement)?.textContent = Localization.t("modal.deleteWarning")
         cancelDeleteBtn.textContent = Localization.t("modal.cancelButton")
         confirmDeleteBtn.textContent = Localization.t("modal.deleteButton")
+
+        // Update rename modal
+        (renameModal.querySelector(".modal-header h2") as? HTMLElement)?.textContent = Localization.t("modal.renameTitle")
+        (renameModal.querySelector(".modal-label") as? HTMLElement)?.textContent = Localization.t("modal.renameLabel")
+        renameChatInput.placeholder = Localization.t("modal.renamePlaceholder")
+        cancelRenameBtn.textContent = Localization.t("modal.cancelButton")
+        confirmRenameBtn.textContent = Localization.t("modal.renameButton")
+
+        // Update header title
+        updateChatHeaderTitle()
+    }
+
+    private fun updateChatHeaderTitle() {
+        val currentChat = currentChatId?.let { id -> chats.find { it.id == id } }
+        chatHeaderTitle.textContent = currentChat?.title ?: Localization.t("app.title")
     }
 
     private fun loadChatsFromServer() {
@@ -227,6 +286,7 @@ class ChatUI {
 
         messagesContainer.innerHTML = ""
         renderChatHistory()
+        updateChatHeaderTitle()
 
         // Load messages from server
         scope.launch {
@@ -329,6 +389,7 @@ class ChatUI {
         if (chatIndex != -1) {
             chats[chatIndex] = chats[chatIndex].copy(title = title)
             renderChatHistory()
+            updateChatHeaderTitle()
         }
     }
 
@@ -369,7 +430,7 @@ class ChatUI {
             editBtn.textContent = "✏️"
             editBtn.onclick = { event ->
                 event.stopPropagation()
-                startEditingChatTitle(chat.id, title)
+                showRenameChatModal(chat.id, chat.title)
                 null
             }
 
@@ -455,53 +516,62 @@ class ChatUI {
         }
     }
 
-    private fun startEditingChatTitle(chatId: Int, titleElement: HTMLDivElement) {
-        val currentTitle = titleElement.textContent ?: ""
+    private fun showRenameChatModal(chatId: Int, currentTitle: String) {
+        chatToRename = chatId
+        renameChatInput.value = currentTitle
+        showRenameModal()
 
-        val input = document.createElement("input") as HTMLInputElement
-        input.type = "text"
-        input.value = currentTitle
-        input.className = "chat-title-edit-input"
+        // Focus and select input after modal is shown
+        kotlinx.browser.window.setTimeout({
+            renameChatInput.focus()
+            renameChatInput.select()
+        }, 100)
+    }
 
-        val finishEdit = {
-            val newTitle = input.value.trim()
-            if (newTitle.isNotEmpty() && newTitle != currentTitle) {
-                scope.launch {
-                    val result = apiClient.updateChatTitle(chatId, newTitle)
-                    result.fold(
-                        onSuccess = {
-                            val chatIndex = chats.indexOfFirst { it.id == chatId }
-                            if (chatIndex != -1) {
-                                chats[chatIndex] = chats[chatIndex].copy(title = newTitle)
-                            }
-                            renderChatHistory()
-                        },
-                        onFailure = { error ->
-                            console.error("Failed to update chat title", error)
-                            showError("${Localization.t("error.failedToUpdateTitle")}: ${error.message}")
-                            renderChatHistory()
+    private fun showRenameModal() {
+        renameModal.classList.add("show")
+    }
+
+    private fun hideRenameModal() {
+        renameModal.classList.remove("show")
+        chatToRename = null
+        renameChatInput.value = ""
+    }
+
+    private fun handleConfirmRename() {
+        val chatId = chatToRename ?: return
+        val newTitle = renameChatInput.value.trim()
+
+        if (newTitle.isEmpty()) {
+            hideRenameModal()
+            return
+        }
+
+        hideRenameModal()
+
+        scope.launch {
+            try {
+                val result = apiClient.updateChatTitle(chatId, newTitle)
+                result.fold(
+                    onSuccess = {
+                        val chatIndex = chats.indexOfFirst { it.id == chatId }
+                        if (chatIndex != -1) {
+                            chats[chatIndex] = chats[chatIndex].copy(title = newTitle)
                         }
-                    )
-                }
-            } else {
-                renderChatHistory()
+                        renderChatHistory()
+                        updateChatHeaderTitle()
+                        console.log("Chat $chatId renamed successfully")
+                    },
+                    onFailure = { error ->
+                        console.error("Failed to update chat title", error)
+                        showError("${Localization.t("error.failedToUpdateTitle")}: ${error.message}")
+                    }
+                )
+            } catch (e: Exception) {
+                console.error("Error updating chat title", e)
+                showError("${Localization.t("error.failedToUpdateTitle")}: ${e.message}")
             }
         }
-
-        input.onblur = { finishEdit(); null }
-        input.onkeydown = { event ->
-            if (event is org.w3c.dom.events.KeyboardEvent) {
-                when (event.key) {
-                    "Enter" -> finishEdit()
-                    "Escape" -> renderChatHistory()
-                }
-            }
-            null
-        }
-
-        titleElement.parentElement?.replaceChild(input, titleElement)
-        input.focus()
-        input.select()
     }
 
     private fun showError(errorMessage: String) {
