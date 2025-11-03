@@ -27,6 +27,11 @@ kotlin {
 
     jvm {
         withJava()
+        compilations.all {
+            kotlinOptions {
+                jvmTarget = "17"
+            }
+        }
     }
 
     sourceSets {
@@ -74,5 +79,23 @@ kotlin {
                 implementation("org.mindrot:jbcrypt:0.4")
             }
         }
+    }
+}
+
+// Create fat JAR with manifest
+tasks.register<Jar>("fatJar") {
+    group = "build"
+    manifest {
+        attributes["Main-Class"] = "app.ApplicationKt"
+    }
+    archiveBaseName.set("ai-chat-jvm")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from(configurations.getByName("jvmRuntimeClasspath").map { if (it.isDirectory) it else zipTree(it) })
+    with(tasks.getByName("jvmJar") as CopySpec)
+}
+
+tasks.named("jvmJar") {
+    manifest {
+        attributes["Main-Class"] = "app.ApplicationKt"
     }
 }
