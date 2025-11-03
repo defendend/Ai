@@ -11,11 +11,11 @@ body {
     display: flex;
     justify-content: flex-start;
     align-items: flex-start;
-    padding: 20px 20px 20px 80px;
+    padding: 20px 80px 20px 80px;
 }
 
 .app-container {
-    width: calc(100vw - 100px);
+    width: calc(100vw - 160px);
     height: 90vh;
     display: flex;
     gap: 20px;
