@@ -8,8 +8,16 @@
 </head>
 <body>
     <div id="root">
-        <div class="chat-container">
-            <div class="chat-header">
+        <div class="app-container">
+            <div class="sidebar">
+                <button id="newChatBtn" class="new-chat-btn">+ New Chat</button>
+                <div class="chat-history">
+                    <h3>Recent Chats</h3>
+                    <div id="chatHistoryList" class="chat-history-list"></div>
+                </div>
+            </div>
+            <div class="chat-container">
+                <div class="chat-header">
                 <h1>AI Chat</h1>
                 <div class="provider-selector">
                     <label>
@@ -35,6 +43,7 @@
                 <textarea id="messageInput" placeholder="Type your message here..." rows="3"></textarea>
                 <button id="sendBtn">Send</button>
             </div>
+        </div>
         </div>
     </div>
     <script src="ai-chat.js"></script>

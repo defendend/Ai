@@ -35,10 +35,21 @@ data class AnthropicResponse(
     val stopReason: String? = null
 )
 
+@Serializable
 data class ChatMessage(
     val role: String,
     val content: String,
     val timestamp: Long = js("Date.now()").unsafeCast<Long>()
+)
+
+@Serializable
+data class Chat(
+    val id: String,
+    val title: String,
+    val messages: List<ChatMessage>,
+    val provider: String = "claude",
+    val createdAt: Long = js("Date.now()").unsafeCast<Long>(),
+    val updatedAt: Long = js("Date.now()").unsafeCast<Long>()
 )
 
 // DeepSeek / OpenAI compatible models
