@@ -56,34 +56,6 @@ body {
     transform: translateY(0);
 }
 
-.language-selector {
-    margin-bottom: 20px;
-}
-
-.language-select {
-    width: 100%;
-    padding: 10px 12px;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    background: white;
-    color: #333;
-    font-size: 14px;
-    font-weight: 500;
-    font-family: inherit;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.language-select:hover {
-    border-color: #667eea;
-}
-
-.language-select:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
 .chat-history h3 {
     font-size: 14px;
     color: #666;

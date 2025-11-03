@@ -39,7 +39,6 @@ class ChatUI {
     private val deleteChatTitle: HTMLSpanElement
     private val confirmDeleteBtn: HTMLButtonElement
     private val cancelDeleteBtn: HTMLButtonElement
-    private val languageSelect: HTMLSelectElement
 
     private var chatToDelete: Int? = null
 
@@ -55,10 +54,6 @@ class ChatUI {
         deleteChatTitle = document.getElementById("deleteChatTitle") as HTMLSpanElement
         confirmDeleteBtn = document.getElementById("confirmDeleteBtn") as HTMLButtonElement
         cancelDeleteBtn = document.getElementById("cancelDeleteBtn") as HTMLButtonElement
-        languageSelect = document.getElementById("languageSelect") as HTMLSelectElement
-
-        // Set current language
-        languageSelect.value = Localization.getCurrentLocale()
 
         setupEventListeners()
         updateUITexts()
@@ -125,15 +120,6 @@ class ChatUI {
             if (event.target == deleteModal) {
                 hideDeleteModal()
             }
-            null
-        }
-
-        // Language change handler
-        languageSelect.onchange = {
-            val newLocale = languageSelect.value
-            Localization.setLocale(newLocale)
-            updateUITexts()
-            renderChatHistory()
             null
         }
     }
