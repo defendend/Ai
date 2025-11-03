@@ -354,3 +354,11 @@ body {
     margin: 10px;
     border: 1px solid #fcc;
 }
+
+.loading-message {
+    text-align: center;
+    padding: 20px;
+    color: #667eea;
+    font-size: 16px;
+    font-weight: 500;
+}

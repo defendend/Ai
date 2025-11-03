@@ -1,24 +1,32 @@
 package app
 
 import kotlinx.browser.document
-import kotlinx.browser.localStorage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.w3c.dom.*
 import org.w3c.dom.events.KeyboardEvent
 
+data class LocalChat(
+    val id: Int,
+    val title: String,
+    val provider: String,
+    val messages: List<LocalMessage> = emptyList()
+)
+
+data class LocalMessage(
+    val role: String,
+    val content: String
+)
+
 class ChatUI {
     private val scope = CoroutineScope(Dispatchers.Default)
-    private val chatHistory = ChatHistory()
+    private val apiClient = BackendApiClient()
 
-    private var chats = mutableListOf<Chat>()
-    private var currentChatId: String? = null
-    private var currentMessages = mutableListOf<ChatMessage>()
-
-    private var claudeClient: AnthropicClient
-    private var deepseekClient: DeepSeekClient
-    private var currentProvider: String = "claude"
+    private var chats = mutableListOf<LocalChat>()
+    private var currentChatId: Int? = null
+    private var currentMessages = mutableListOf<LocalMessage>()
+    private var currentProvider: String = "deepseek"
 
     // DOM elements
     private val messagesContainer: HTMLDivElement
@@ -28,20 +36,7 @@ class ChatUI {
     private val chatHistoryList: HTMLDivElement
     private val providerSelect: HTMLSelectElement
 
-    private val claudeApiKeyInput: HTMLInputElement
-    private val saveClaudeKeyBtn: HTMLButtonElement
-
-    private val deepseekApiKeyInput: HTMLInputElement
-    private val saveDeepseekKeyBtn: HTMLButtonElement
-
     init {
-        // Load API keys
-        val claudeKey = localStorage.getItem("claude_api_key") ?: ""
-        val deepseekKey = localStorage.getItem("deepseek_api_key") ?: ""
-
-        claudeClient = AnthropicClient(claudeKey)
-        deepseekClient = DeepSeekClient(deepseekKey)
-
         // Get DOM elements
         messagesContainer = document.getElementById("messagesContainer") as HTMLDivElement
         messageInput = document.getElementById("messageInput") as HTMLTextAreaElement
@@ -50,27 +45,8 @@ class ChatUI {
         chatHistoryList = document.getElementById("chatHistoryList") as HTMLDivElement
         providerSelect = document.getElementById("providerSelect") as HTMLSelectElement
 
-        claudeApiKeyInput = document.getElementById("claudeApiKeyInput") as HTMLInputElement
-        saveClaudeKeyBtn = document.getElementById("saveClaudeKeyBtn") as HTMLButtonElement
-
-        deepseekApiKeyInput = document.getElementById("deepseekApiKeyInput") as HTMLInputElement
-        saveDeepseekKeyBtn = document.getElementById("saveDeepseekKeyBtn") as HTMLButtonElement
-
-        // Set saved API keys
-        if (claudeKey.isNotEmpty()) claudeApiKeyInput.value = claudeKey
-        if (deepseekKey.isNotEmpty()) deepseekApiKeyInput.value = deepseekKey
-
-        // Load chat history
-        loadChatHistory()
-
-        // Create first chat if none exist
-        if (chats.isEmpty()) {
-            createNewChat()
-        } else {
-            switchToChat(chats.first().id)
-        }
-
         setupEventListeners()
+        loadChatsFromServer()
     }
 
     private fun setupEventListeners() {
@@ -90,53 +66,85 @@ class ChatUI {
             currentProvider = providerSelect.value
             null
         }
+    }
 
-        saveClaudeKeyBtn.onclick = {
-            localStorage.setItem("claude_api_key", claudeApiKeyInput.value)
-            claudeClient.updateApiKey(claudeApiKeyInput.value)
-            console.log("Claude API key saved!")
-            null
-        }
+    private fun loadChatsFromServer() {
+        scope.launch {
+            try {
+                showLoading("Loading chats...")
+                val result = apiClient.getChats()
 
-        saveDeepseekKeyBtn.onclick = {
-            localStorage.setItem("deepseek_api_key", deepseekApiKeyInput.value)
-            deepseekClient.updateApiKey(deepseekApiKeyInput.value)
-            console.log("DeepSeek API key saved!")
-            null
+                result.fold(
+                    onSuccess = { chatResponses ->
+                        chats = chatResponses.map { response ->
+                            LocalChat(
+                                id = response.id,
+                                title = response.title,
+                                provider = response.provider
+                            )
+                        }.toMutableList()
+
+                        renderChatHistory()
+
+                        if (chats.isNotEmpty()) {
+                            switchToChat(chats.first().id)
+                        } else {
+                            createNewChat()
+                        }
+                        hideLoading()
+                    },
+                    onFailure = { error ->
+                        console.error("Failed to load chats", error)
+                        hideLoading()
+                        createNewChat()
+                    }
+                )
+            } catch (e: Exception) {
+                console.error("Error loading chats", e)
+                hideLoading()
+                createNewChat()
+            }
         }
     }
 
     private fun createNewChat() {
-        val chatId = chatHistory.generateChatId()
-        val newChat = Chat(
-            id = chatId,
-            title = "New Chat",
-            messages = emptyList(),
-            provider = currentProvider
-        )
-        chats.add(0, newChat)
+        scope.launch {
+            try {
+                sendBtn.disabled = true
+                val result = apiClient.createChat("New Chat", currentProvider)
 
-        // Keep only last 10 chats
-        if (chats.size > 10) {
-            chats = chats.take(10).toMutableList()
+                result.fold(
+                    onSuccess = { chatResponse ->
+                        val newChat = LocalChat(
+                            id = chatResponse.id,
+                            title = chatResponse.title,
+                            provider = chatResponse.provider
+                        )
+                        chats.add(0, newChat)
+                        switchToChat(newChat.id)
+                        renderChatHistory()
+                    },
+                    onFailure = { error ->
+                        showError("Failed to create chat: ${error.message}")
+                    }
+                )
+            } catch (e: Exception) {
+                showError("Error creating chat: ${e.message}")
+            } finally {
+                sendBtn.disabled = false
+            }
         }
-
-        switchToChat(chatId)
-        saveChats()
-        renderChatHistory()
     }
 
-    private fun switchToChat(chatId: String) {
+    private fun switchToChat(chatId: Int) {
         currentChatId = chatId
         val chat = chats.find { it.id == chatId } ?: return
 
-        currentMessages = chat.messages.toMutableList()
+        currentMessages.clear()
         currentProvider = chat.provider
-
-        // Update provider select
         providerSelect.value = chat.provider
 
-        renderMessages()
+        messagesContainer.innerHTML = ""
         renderChatHistory()
     }
 
@@ -144,71 +152,69 @@ class ChatUI {
         val content = messageInput.value.trim()
         if (content.isEmpty()) return
 
-        val userMessage = ChatMessage(role = "user", content = content)
+        val chatId = currentChatId
+        if (chatId == null) {
+            showError("Please create a chat first")
+            return
+        }
+
+        // Display user message immediately
+        val userMessage = LocalMessage(role = "user", content = content)
         currentMessages.add(userMessage)
         displayMessage(userMessage)
 
         messageInput.value = ""
         sendBtn.disabled = true
 
-        // Update chat title from first message
-        val currentChat = chats.find { it.id == currentChatId }
-        if (currentChat != null && currentMessages.size == 1) {
-            val updatedChat = currentChat.copy(
-                title = chatHistory.generateChatTitle(content),
-                messages = currentMessages
-            )
-            chats[chats.indexOfFirst { it.id == currentChatId }] = updatedChat
-            renderChatHistory()
-        }
-
         scope.launch {
             try {
-                val apiMessages = currentMessages.map { Message(role = it.role, content = it.content) }
-
-                val result = when (currentProvider) {
-                    "claude" -> claudeClient.sendMessage(apiMessages)
-                    "deepseek" -> deepseekClient.sendMessage(apiMessages)
-                    else -> Result.failure(Exception("Unknown provider"))
-                }
+                val result = apiClient.sendMessage(chatId, content)
 
                 result.fold(
-                    onSuccess = { responseContent ->
-                        val assistantMessage = ChatMessage(role = "assistant", content = responseContent)
-                        currentMessages.add(assistantMessage)
-                        displayMessage(assistantMessage)
-                        updateCurrentChat()
+                    onSuccess = { messages ->
+                        // Backend returns both user and assistant messages
+                        // Find the assistant message (last one)
+                        val assistantMsg = messages.lastOrNull { it.role == "assistant" }
+                        if (assistantMsg != null) {
+                            val localMsg = LocalMessage(
+                                role = assistantMsg.role,
+                                content = assistantMsg.content
+                            )
+                            currentMessages.add(localMsg)
+                            displayMessage(localMsg)
+
+                            // Update chat title from first message
+                            if (currentMessages.size <= 2) {
+                                updateChatTitle(chatId, content.take(30))
+                            }
+                        }
                     },
                     onFailure = { error ->
                         showError("Error: ${error.message}")
+                        // Remove the optimistically added user message
+                        currentMessages.removeLastOrNull()
+                        messagesContainer.removeChild(messagesContainer.lastChild!!)
                     }
                 )
             } catch (e: Exception) {
                 showError("Error: ${e.message}")
+                currentMessages.removeLastOrNull()
+                messagesContainer.lastChild?.let { messagesContainer.removeChild(it) }
             } finally {
                 sendBtn.disabled = false
             }
         }
     }
 
-    private fun updateCurrentChat() {
-        val chatIndex = chats.indexOfFirst { it.id == currentChatId }
+    private fun updateChatTitle(chatId: Int, title: String) {
+        val chatIndex = chats.indexOfFirst { it.id == chatId }
         if (chatIndex != -1) {
-            val currentChat = chats[chatIndex]
-            chats[chatIndex] = currentChat.copy(
-                messages = currentMessages,
-                updatedAt = js("Date.now()").unsafeCast<Long>()
-            )
-            saveChats()
+            chats[chatIndex] = chats[chatIndex].copy(title = title)
+            renderChatHistory()
         }
     }
 
-    private fun renderMessages() {
-        messagesContainer.innerHTML = ""
-        currentMessages.forEach { displayMessage(it) }
-    }
-
-    private fun displayMessage(message: ChatMessage) {
+    private fun displayMessage(message: LocalMessage) {
         val messageDiv = document.createElement("div") as HTMLDivElement
         messageDiv.className = "message ${message.role}"
 
@@ -239,7 +245,7 @@ class ChatUI {
 
             val preview = document.createElement("div") as HTMLDivElement
             preview.className = "chat-history-item-preview"
-            preview.textContent = chat.messages.lastOrNull()?.content?.take(50) ?: "Empty chat"
+            preview.textContent = "${chat.provider} • Click to view"
 
             chatItem.appendChild(title)
             chatItem.appendChild(preview)
@@ -250,19 +256,20 @@ class ChatUI {
         }
     }
 
-    private fun loadChatHistory() {
-        chats = chatHistory.loadChats().toMutableList()
-    }
-
-    private fun saveChats() {
-        chatHistory.saveChats(chats)
-    }
-
     private fun showError(errorMessage: String) {
         val errorDiv = document.createElement("div") as HTMLDivElement
         errorDiv.className = "error-message"
         errorDiv.textContent = errorMessage
         messagesContainer.appendChild(errorDiv)
         messagesContainer.scrollTop = messagesContainer.scrollHeight.toDouble()
+    }
+
+    private fun showLoading(message: String) {
+        messagesContainer.innerHTML = "<div class='loading-message'>$message</div>"
+    }
+
+    private fun hideLoading() {
+        val loadingMsg = messagesContainer.querySelector(".loading-message")
+        loadingMsg?.let { messagesContainer.removeChild(it) }
     }
 }
