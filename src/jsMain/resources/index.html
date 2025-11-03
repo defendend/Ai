@@ -11,9 +11,23 @@
         <div class="chat-container">
             <div class="chat-header">
                 <h1>AI Chat</h1>
-                <div class="api-key-container">
-                    <input type="password" id="apiKeyInput" placeholder="Enter Anthropic API Key">
-                    <button id="saveKeyBtn">Save Key</button>
+                <div class="provider-selector">
+                    <label>
+                        <input type="radio" name="provider" value="claude" id="claudeProvider" checked>
+                        Claude AI
+                    </label>
+                    <label>
+                        <input type="radio" name="provider" value="deepseek" id="deepseekProvider">
+                        DeepSeek
+                    </label>
+                </div>
+                <div class="api-key-container" id="claudeKeyContainer">
+                    <input type="password" id="claudeApiKeyInput" placeholder="Enter Claude API Key">
+                    <button id="saveClaudeKeyBtn">Save Claude Key</button>
+                </div>
+                <div class="api-key-container" id="deepseekKeyContainer" style="display: none;">
+                    <input type="password" id="deepseekApiKeyInput" placeholder="Enter DeepSeek API Key">
+                    <button id="saveDeepseekKeyBtn">Save DeepSeek Key</button>
                 </div>
             </div>
             <div id="messagesContainer" class="messages-container"></div>

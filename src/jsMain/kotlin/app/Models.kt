@@ -40,3 +40,28 @@ data class ChatMessage(
     val content: String,
     val timestamp: Long = js("Date.now()").unsafeCast<Long>()
 )
+
+// DeepSeek / OpenAI compatible models
+@Serializable
+data class DeepSeekRequest(
+    val model: String,
+    val messages: List<Message>,
+    @SerialName("max_tokens")
+    val maxTokens: Int = 4096,
+    val temperature: Double = 0.7
+)
+
+@Serializable
+data class DeepSeekChoice(
+    val index: Int,
+    val message: Message,
+    @SerialName("finish_reason")
+    val finishReason: String
+)
+
+@Serializable
+data class DeepSeekResponse(
+    val id: String,
+    val choices: List<DeepSeekChoice>,
+    val model: String
+)
