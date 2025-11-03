@@ -11,12 +11,12 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 20px;
+    padding: 10px;
 }
 
 .chat-container {
-    width: 100%;
-    max-width: 95%;
+    width: 98vw;
+    max-width: calc(100vw - 20px);
     height: 90vh;
     background: white;
     border-radius: 16px;
