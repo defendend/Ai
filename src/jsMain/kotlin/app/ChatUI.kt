@@ -341,6 +341,9 @@ class ChatUI {
         currentMessages.add(userMessage)
         displayMessage(userMessage)
 
+        // Show typing indicator
+        showTypingIndicator()
+
         messageInput.value = ""
         sendBtn.disabled = true
 
@@ -350,6 +353,9 @@ class ChatUI {
 
                 result.fold(
                     onSuccess = { messages ->
+                        // Remove typing indicator
+                        hideTypingIndicator()
+
                         // Backend returns both user and assistant messages
                         // Find the assistant message (last one)
                         val assistantMsg = messages.lastOrNull { it.role == "assistant" }
@@ -368,6 +374,9 @@ class ChatUI {
                         }
                     },
                     onFailure = { error ->
+                        // Remove typing indicator
+                        hideTypingIndicator()
+
                         showError("${Localization.t("error.failedToSendMessage")}: ${error.message}")
                         // Remove the optimistically added user message
                         currentMessages.removeLastOrNull()
@@ -375,6 +384,9 @@ class ChatUI {
                     }
                 )
             } catch (e: Exception) {
+                // Remove typing indicator
+                hideTypingIndicator()
+
                 showError("${Localization.t("error.failedToSendMessage")}: ${e.message}")
                 currentMessages.removeLastOrNull()
                 messagesContainer.lastChild?.let { messagesContainer.removeChild(it) }
@@ -572,6 +584,41 @@ class ChatUI {
                 showError("${Localization.t("error.failedToUpdateTitle")}: ${e.message}")
             }
         }
+    }
+
+    private fun showTypingIndicator() {
+        val messageDiv = document.createElement("div") as HTMLDivElement
+        messageDiv.className = "message assistant typing-message"
+        messageDiv.setAttribute("data-typing-indicator", "true")
+
+        val avatar = document.createElement("div") as HTMLDivElement
+        avatar.className = "message-avatar"
+        avatar.textContent = "AI"
+
+        val contentDiv = document.createElement("div") as HTMLDivElement
+        contentDiv.className = "message-content"
+
+        val typingIndicator = document.createElement("div") as HTMLDivElement
+        typingIndicator.className = "typing-indicator"
+
+        // Create three animated dots
+        for (i in 1..3) {
+            val dot = document.createElement("span") as HTMLSpanElement
+            dot.className = "typing-dot"
+            typingIndicator.appendChild(dot)
+        }
+
+        contentDiv.appendChild(typingIndicator)
+        messageDiv.appendChild(avatar)
+        messageDiv.appendChild(contentDiv)
+
+        messagesContainer.appendChild(messageDiv)
+        messagesContainer.scrollTop = messagesContainer.scrollHeight.toDouble()
+    }
+
+    private fun hideTypingIndicator() {
+        val typingMessage = messagesContainer.querySelector("[data-typing-indicator='true']")
+        typingMessage?.let { messagesContainer.removeChild(it) }
     }
 
     private fun showError(errorMessage: String) {
