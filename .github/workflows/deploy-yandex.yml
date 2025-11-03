@@ -23,17 +23,27 @@ jobs:
       - name: Build project
         run: ./gradlew jsBrowserProductionWebpack --no-daemon
 
-      - name: Deploy to server
+      - name: Copy files to server
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "build/dist/js/productionExecutable/*"
-          target: "/var/www/defendend.dev"
+          target: "/home/defendend/deploy_temp"
           strip_components: 4
-          rm: true
+          overwrite: true
 
-      - name: Notify
-        if: success()
-        run: echo "✅ Deployed to https://defendend.dev"
+      - name: Deploy files to web directory
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            sudo rm -rf /var/www/defendend.dev/*
+            sudo cp -r /home/defendend/deploy_temp/* /var/www/defendend.dev/
+            sudo chown -R www-data:www-data /var/www/defendend.dev
+            sudo chmod -R 755 /var/www/defendend.dev
+            rm -rf /home/defendend/deploy_temp
+            echo "✅ Deployed to https://defendend.dev"
