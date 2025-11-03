@@ -353,12 +353,16 @@ class ChatUI {
 
                 result.fold(
                     onSuccess = { messages ->
+                        console.log("Received messages:", messages)
+
                         // Remove typing indicator
                         hideTypingIndicator()
 
                         // Backend returns both user and assistant messages
                         // Find the assistant message (last one)
                         val assistantMsg = messages.lastOrNull { it.role == "assistant" }
+                        console.log("Assistant message:", assistantMsg)
+
                         if (assistantMsg != null) {
                             val localMsg = LocalMessage(
                                 role = assistantMsg.role,
@@ -371,6 +375,8 @@ class ChatUI {
                             if (currentMessages.size <= 2) {
                                 updateChatTitle(chatId, content.take(30))
                             }
+                        } else {
+                            console.warn("No assistant message found in response")
                         }
                     },
                     onFailure = { error ->
