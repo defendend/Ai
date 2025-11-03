@@ -1,0 +1,11 @@
+[build]
+  command = "./gradlew jsBrowserProductionWebpack"
+  publish = "build/dist/js/productionExecutable"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[build.environment]
+  JAVA_VERSION = "17"

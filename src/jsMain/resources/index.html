@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat - Claude</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="root">
+        <div class="chat-container">
+            <div class="chat-header">
+                <h1>AI Chat</h1>
+                <div class="api-key-container">
+                    <input type="password" id="apiKeyInput" placeholder="Enter Anthropic API Key">
+                    <button id="saveKeyBtn">Save Key</button>
+                </div>
+            </div>
+            <div id="messagesContainer" class="messages-container"></div>
+            <div class="input-container">
+                <textarea id="messageInput" placeholder="Type your message here..." rows="3"></textarea>
+                <button id="sendBtn">Send</button>
+            </div>
+        </div>
+    </div>
+    <script src="ai-chat.js"></script>
+</body>
+</html>

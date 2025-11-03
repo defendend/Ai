@@ -1,0 +1,11 @@
+{
+  "buildCommand": "./gradlew jsBrowserProductionWebpack",
+  "outputDirectory": "build/dist/js/productionExecutable",
+  "framework": null,
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ]
+}
