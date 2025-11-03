@@ -131,6 +131,59 @@ Backend будет доступен на `http://localhost:8080`
 ./gradlew build                      # Собрать всё
 ```
 
+## Автоматический деплой
+
+Проект настроен для автоматического деплоя на Yandex Cloud VPS через GitHub Actions.
+
+### Настройка сервера (один раз)
+
+1. Скопируйте скрипт настройки на сервер:
+```bash
+scp server-setup.sh user@your-server:~
+```
+
+2. Запустите скрипт:
+```bash
+ssh user@your-server
+sudo bash server-setup.sh
+```
+
+3. Отредактируйте файл с переменными окружения:
+```bash
+sudo nano /opt/ai-chat/.env
+# Добавьте ваши API ключи для Claude и DeepSeek
+```
+
+4. После первого деплоя через GitHub Actions, запустите сервис:
+```bash
+sudo systemctl start ai-chat
+sudo systemctl enable ai-chat
+sudo systemctl status ai-chat
+```
+
+### Автодеплой
+
+После настройки, при каждом пуше в main:
+- **Frontend** автоматически собирается и деплоится в `/var/www/defendend.dev/`
+- **Backend** автоматически собирается, деплоится в `/opt/ai-chat/` и перезапускается
+
+Проверить статус деплоя: https://github.com/defendend/Ai/actions
+
+Backend API доступен по адресу: `https://defendend.dev/api/`
+
+### Логи backend
+
+```bash
+# Просмотр логов в реальном времени
+sudo journalctl -u ai-chat -f
+
+# Последние 100 строк логов
+sudo journalctl -u ai-chat -n 100
+
+# Статус сервиса
+sudo systemctl status ai-chat
+```
+
 ## TODO
 
 - [ ] Добавить JWT middleware для защиты API
