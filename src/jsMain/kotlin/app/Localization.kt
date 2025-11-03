@@ -80,7 +80,8 @@ object Localization {
             "error.failedToUpdateProvider" to "Failed to update provider",
             "error.failedToUpdateTitle" to "Failed to update title",
             "error.failedToDeleteChat" to "Failed to delete chat",
-            "error.failedToSendMessage" to "Error",
+            "error.failedToSendMessage" to "Failed to send message",
+            "error.tryAgain" to "Something went wrong. Please try again.",
 
             // Settings
             "settings.language" to "Language"
@@ -125,7 +126,8 @@ object Localization {
             "error.failedToUpdateProvider" to "Не удалось обновить провайдера",
             "error.failedToUpdateTitle" to "Не удалось обновить название",
             "error.failedToDeleteChat" to "Не удалось удалить чат",
-            "error.failedToSendMessage" to "Ошибка",
+            "error.failedToSendMessage" to "Не удалось отправить сообщение",
+            "error.tryAgain" to "Что-то пошло не так. Попробуйте снова.",
 
             // Settings
             "settings.language" to "Язык"

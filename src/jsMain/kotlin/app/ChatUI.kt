@@ -377,19 +377,30 @@ class ChatUI {
                         // Remove typing indicator
                         hideTypingIndicator()
 
-                        showError("${Localization.t("error.failedToSendMessage")}: ${error.message}")
-                        // Remove the optimistically added user message
-                        currentMessages.removeLastOrNull()
-                        messagesContainer.removeChild(messagesContainer.lastChild!!)
+                        // Show error as AI message
+                        val errorMsg = LocalMessage(
+                            role = "assistant",
+                            content = Localization.t("error.tryAgain")
+                        )
+                        currentMessages.add(errorMsg)
+                        displayMessage(errorMsg)
+
+                        console.error("Failed to send message", error)
                     }
                 )
             } catch (e: Exception) {
                 // Remove typing indicator
                 hideTypingIndicator()
 
-                showError("${Localization.t("error.failedToSendMessage")}: ${e.message}")
-                currentMessages.removeLastOrNull()
-                messagesContainer.lastChild?.let { messagesContainer.removeChild(it) }
+                // Show error as AI message
+                val errorMsg = LocalMessage(
+                    role = "assistant",
+                    content = Localization.t("error.tryAgain")
+                )
+                currentMessages.add(errorMsg)
+                displayMessage(errorMsg)
+
+                console.error("Error sending message", e)
             } finally {
                 sendBtn.disabled = false
             }
