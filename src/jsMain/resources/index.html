@@ -11,8 +11,14 @@
         <div class="app-container">
             <div class="sidebar">
                 <button id="newChatBtn" class="new-chat-btn">+ New Chat</button>
+                <div class="language-selector">
+                    <select id="languageSelect" class="language-select">
+                        <option value="en">English</option>
+                        <option value="ru">Русский</option>
+                    </select>
+                </div>
                 <div class="chat-history">
-                    <h3>Recent Chats</h3>
+                    <h3 id="recentChatsTitle">Recent Chats</h3>
                     <div id="chatHistoryList" class="chat-history-list"></div>
                 </div>
             </div>

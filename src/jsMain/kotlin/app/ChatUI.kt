@@ -39,6 +39,7 @@ class ChatUI {
     private val deleteChatTitle: HTMLSpanElement
     private val confirmDeleteBtn: HTMLButtonElement
     private val cancelDeleteBtn: HTMLButtonElement
+    private val languageSelect: HTMLSelectElement
 
     private var chatToDelete: Int? = null
 
@@ -54,8 +55,13 @@ class ChatUI {
         deleteChatTitle = document.getElementById("deleteChatTitle") as HTMLSpanElement
         confirmDeleteBtn = document.getElementById("confirmDeleteBtn") as HTMLButtonElement
         cancelDeleteBtn = document.getElementById("cancelDeleteBtn") as HTMLButtonElement
+        languageSelect = document.getElementById("languageSelect") as HTMLSelectElement
+
+        // Set current language
+        languageSelect.value = Localization.getCurrentLocale()
 
         setupEventListeners()
+        updateUITexts()
         loadChatsFromServer()
     }
 
@@ -93,7 +99,7 @@ class ChatUI {
                         },
                         onFailure = { error ->
                             console.error("Failed to update provider", error)
-                            showError("Failed to update provider: ${error.message}")
+                            showError("${Localization.t("error.failedToUpdateProvider")}: ${error.message}")
                             // Revert the selection
                             providerSelect.value = chats.find { it.id == chatId }?.provider ?: newProvider
                         }
@@ -121,12 +127,46 @@ class ChatUI {
             }
             null
         }
+
+        // Language change handler
+        languageSelect.onchange = {
+            val newLocale = languageSelect.value
+            Localization.setLocale(newLocale)
+            updateUITexts()
+            renderChatHistory()
+            null
+        }
+    }
+
+    private fun updateUITexts() {
+        // Update header
+        (document.querySelector(".chat-header h1") as? HTMLElement)?.textContent = Localization.t("app.title")
+
+        // Update sidebar
+        newChatBtn.textContent = Localization.t("sidebar.newChat")
+        (document.getElementById("recentChatsTitle") as? HTMLElement)?.textContent = Localization.t("sidebar.recentChats")
+
+        // Update input placeholder and button
+        messageInput.placeholder = Localization.t("chat.inputPlaceholder")
+        sendBtn.textContent = Localization.t("chat.sendButton")
+
+        // Update provider select options
+        val deepseekOption = providerSelect.querySelector("option[value='deepseek']") as? HTMLOptionElement
+        val claudeOption = providerSelect.querySelector("option[value='claude']") as? HTMLOptionElement
+        deepseekOption?.textContent = Localization.t("provider.deepseek")
+        claudeOption?.textContent = Localization.t("provider.claude")
+
+        // Update modal
+        (deleteModal.querySelector(".modal-header h2") as? HTMLElement)?.textContent = Localization.t("modal.deleteTitle")
+        (deleteModal.querySelector(".modal-warning") as? HTMLElement)?.textContent = Localization.t("modal.deleteWarning")
+        cancelDeleteBtn.textContent = Localization.t("modal.cancelButton")
+        confirmDeleteBtn.textContent = Localization.t("modal.deleteButton")
     }
 
     private fun loadChatsFromServer() {
         scope.launch {
             try {
-                showLoading("Loading chats...")
+                showLoading(Localization.t("message.loadingChats"))
                 val result = apiClient.getChats()
 
                 result.fold(
@@ -180,11 +220,11 @@ class ChatUI {
                         renderChatHistory()
                     },
                     onFailure = { error ->
-                        showError("Failed to create chat: ${error.message}")
+                        showError("${Localization.t("error.failedToCreateChat")}: ${error.message}")
                     }
                 )
             } catch (e: Exception) {
-                showError("Error creating chat: ${e.message}")
+                showError("${Localization.t("error.failedToCreateChat")}: ${e.message}")
             } finally {
                 sendBtn.disabled = false
             }
@@ -205,7 +245,7 @@ class ChatUI {
         // Load messages from server
         scope.launch {
             try {
-                showLoading("Loading messages...")
+                showLoading(Localization.t("message.loadingMessages"))
                 val result = apiClient.getChatWithMessages(chatId)
 
                 result.fold(
@@ -224,13 +264,13 @@ class ChatUI {
                     onFailure = { error ->
                         console.error("Failed to load messages", error)
                         hideLoading()
-                        showError("Failed to load messages: ${error.message}")
+                        showError("${Localization.t("error.failedToLoadMessages")}: ${error.message}")
                     }
                 )
             } catch (e: Exception) {
                 console.error("Error loading messages", e)
                 hideLoading()
-                showError("Error loading messages: ${e.message}")
+                showError("${Localization.t("error.failedToLoadMessages")}: ${e.message}")
             }
         }
     }
@@ -246,7 +286,7 @@ class ChatUI {
 
         val chatId = currentChatId
         if (chatId == null) {
-            showError("Please create a chat first")
+            showError(Localization.t("error.createChat"))
             return
         }
 
@@ -282,14 +322,14 @@ class ChatUI {
                         }
                     },
                     onFailure = { error ->
-                        showError("Error: ${error.message}")
+                        showError("${Localization.t("error.failedToSendMessage")}: ${error.message}")
                         // Remove the optimistically added user message
                         currentMessages.removeLastOrNull()
                         messagesContainer.removeChild(messagesContainer.lastChild!!)
                     }
                 )
             } catch (e: Exception) {
-                showError("Error: ${e.message}")
+                showError("${Localization.t("error.failedToSendMessage")}: ${e.message}")
                 currentMessages.removeLastOrNull()
                 messagesContainer.lastChild?.let { messagesContainer.removeChild(it) }
             } finally {
@@ -362,7 +402,7 @@ class ChatUI {
 
             val preview = document.createElement("div") as HTMLDivElement
             preview.className = "chat-history-item-preview"
-            preview.textContent = "${chat.provider} • Click to view"
+            preview.textContent = "${chat.provider} • ${Localization.t("chat.clickToView")}"
 
             chatItem.appendChild(titleContainer)
             chatItem.appendChild(preview)
@@ -375,7 +415,11 @@ class ChatUI {
 
     private fun confirmDeleteChat(chatId: Int, chatTitle: String) {
         chatToDelete = chatId
-        deleteChatTitle.textContent = chatTitle
+
+        // Update modal question text with localized string
+        val questionText = deleteModal.querySelector(".modal-body p:first-child") as? HTMLParagraphElement
+        questionText?.innerHTML = "${Localization.t("modal.deleteQuestion")} \"<span id='deleteChatTitle'>$chatTitle</span>\"?"
+
         showDeleteModal()
     }
 
@@ -415,12 +459,12 @@ class ChatUI {
                     },
                     onFailure = { error ->
                         console.error("Failed to delete chat", error)
-                        showError("Failed to delete chat: ${error.message}")
+                        showError("${Localization.t("error.failedToDeleteChat")}: ${error.message}")
                     }
                 )
             } catch (e: Exception) {
                 console.error("Error deleting chat", e)
-                showError("Error deleting chat: ${e.message}")
+                showError("${Localization.t("error.failedToDeleteChat")}: ${e.message}")
             }
         }
     }
@@ -448,7 +492,7 @@ class ChatUI {
                         },
                         onFailure = { error ->
                             console.error("Failed to update chat title", error)
-                            showError("Failed to update title: ${error.message}")
+                            showError("${Localization.t("error.failedToUpdateTitle")}: ${error.message}")
                             renderChatHistory()
                         }
                     )
