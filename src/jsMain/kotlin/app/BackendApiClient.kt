@@ -411,15 +411,18 @@ class BackendApiClient {
                         val dataLine = lines[i + 1]
                         if (dataLine.startsWith("data: ")) {
                             val data = dataLine.substring(6)
+                            console.log("[SSE] Calling onChunk with:", data)
                             onChunk(data)
                         }
                     } else if (line.startsWith("event: done")) {
+                        console.log("[SSE] Stream done")
                         onComplete()
                         return
                     } else if (line.startsWith("event: error") && i + 1 < lines.size) {
                         val dataLine = lines[i + 1]
                         if (dataLine.startsWith("data: ")) {
                             val error = dataLine.substring(6)
+                            console.log("[SSE] Error:", error)
                             onError(error)
                             return
                         }

@@ -449,9 +449,11 @@ class ChatUI {
                         chatId = chatId,
                         content = content,
                         onChunk = { chunk ->
+                            console.log("Received chunk:", chunk)
                             fullContent += chunk
                             assistantMessage.content = fullContent
                             contentDiv?.textContent = fullContent
+                            console.log("Updated contentDiv, fullContent length:", fullContent.length)
                             scrollToBottom()
                         },
                         onComplete = {
