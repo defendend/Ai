@@ -359,8 +359,17 @@ fun Route.chatRoutes() {
                 // Stream the response
                 call.respondTextWriter(contentType = ContentType.Text.EventStream) {
                     try {
+                        // Send initial comment to establish connection immediately
+                        write(": connected\n\n")
+                        flush()
+
                         AIService.sendMessageStreaming(provider, allMessages, parameters)
                             .catch { e ->
+                                // Ignore cancellation - connection closed by client
+                                if (e is kotlinx.coroutines.CancellationException) {
+                                    println("Streaming cancelled (client disconnected)")
+                                    return@catch
+                                }
                                 println("Error in streaming flow: ${e.message}")
                                 e.printStackTrace()
                                 // Send error event
@@ -380,12 +389,19 @@ fun Route.chatRoutes() {
                         write("event: done\n")
                         write("data: {\"status\":\"complete\"}\n\n")
                         flush()
+                    } catch (e: kotlinx.coroutines.CancellationException) {
+                        // Connection closed - this is normal, just log and exit
+                        println("Stream writer cancelled (connection closed)")
                     } catch (e: Exception) {
                         println("Exception in streaming writer: ${e.message}")
                         e.printStackTrace()
-                        write("event: error\n")
-                        write("data: ${e.message ?: "Unknown error"}\n\n")
-                        flush()
+                        try {
+                            write("event: error\n")
+                            write("data: ${e.message ?: "Unknown error"}\n\n")
+                            flush()
+                        } catch (ignored: Exception) {
+                            // Connection already closed
+                        }
                     }
                 }
 
