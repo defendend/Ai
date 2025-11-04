@@ -19,6 +19,10 @@ import kotlinx.serialization.json.jsonPrimitive
 
 object AIService {
     private val client = HttpClient(CIO) {
+        engine {
+            requestTimeout = 300_000  // 5 minutes for streaming
+        }
+
         install(ContentNegotiation) {
             json(Json {
                 prettyPrint = true
