@@ -419,8 +419,8 @@ class BackendApiClient {
                             val data = dataLine.substring(6)
                             console.log("[SSE] Calling onChunk with:", data)
                             onChunk(data)
-                            // Yield to event loop to allow setInterval to execute
-                            kotlinx.coroutines.delay(0)
+                            // Add small delay to allow UI to render incrementally
+                            kotlinx.coroutines.delay(15)
                             i += 2  // Skip both event and data lines
                             continue
                         }

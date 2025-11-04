@@ -451,64 +451,35 @@ class ChatUI {
                     val messageDiv = displayMessageForStreaming(assistantMessage)
                     val contentDiv = messageDiv.querySelector(".message-content") as? HTMLDivElement
 
-                    var fullContent = ""
-                    var displayedContent = ""
-                    var updateIntervalId: Int? = null
+                    apiClient.sendMessageStreaming(
+                        chatId = chatId,
+                        content = content,
+                        onChunk = { chunk ->
+                            console.log("Received chunk:", chunk)
+                            assistantMessage.content += chunk
+                            // Update DOM directly on each chunk
+                            contentDiv?.textContent = assistantMessage.content
+                            scrollToBottom()
+                        },
+                        onComplete = {
+                            hideTypingIndicator()
+                            sendBtn.disabled = false
+                            isSending = false
 
-                    try {
-                        // Start interval to update UI every 50ms
-                        updateIntervalId = window.setInterval({
-                            if (displayedContent != fullContent) {
-                                displayedContent = fullContent
-                                contentDiv?.textContent = fullContent
-                                console.log("Updated contentDiv, fullContent length:", fullContent.length)
-                                scrollToBottom()
+                            // Update chat title from first message
+                            if (currentMessages.size <= 2) {
+                                updateChatTitle(chatId, content.take(30))
                             }
-                        }, 50)
+                        },
+                        onError = { error ->
+                            hideTypingIndicator()
+                            sendBtn.disabled = false
+                            isSending = false
 
-                        apiClient.sendMessageStreaming(
-                            chatId = chatId,
-                            content = content,
-                            onChunk = { chunk ->
-                                console.log("Received chunk:", chunk)
-                                fullContent += chunk
-                                assistantMessage.content = fullContent
-                                // Content will be displayed by interval
-                            },
-                            onComplete = {
-                                // Stop the update interval
-                                updateIntervalId?.let { window.clearInterval(it) }
-
-                                // Final update to ensure all text is shown
-                                contentDiv?.textContent = fullContent
-                                scrollToBottom()
-
-                                hideTypingIndicator()
-                                sendBtn.disabled = false
-                                isSending = false
-
-                                // Update chat title from first message
-                                if (currentMessages.size <= 2) {
-                                    updateChatTitle(chatId, content.take(30))
-                                }
-                            },
-                            onError = { error ->
-                                // Stop the update interval
-                                updateIntervalId?.let { window.clearInterval(it) }
-
-                                hideTypingIndicator()
-                                sendBtn.disabled = false
-                                isSending = false
-
-                                contentDiv?.textContent = Localization.t("error.tryAgain")
-                                console.error("Streaming error:", error)
-                            }
-                        )
-                    } catch (e: Exception) {
-                        // Clean up interval on early error
-                        updateIntervalId?.let { window.clearInterval(it) }
-                        throw e
-                    }
+                            contentDiv?.textContent = Localization.t("error.tryAgain")
+                            console.error("Streaming error:", error)
+                        }
+                    )
                 } else {
                     // Non-streaming mode (original behavior)
                     val result = apiClient.sendMessage(chatId, content)
