@@ -788,6 +788,17 @@ class ChatUI {
                         topPInput.value = chat.topP?.toString() ?: ""
                         systemPromptInput.value = chat.systemPrompt ?: ""
 
+                        // Update default value displays based on provider
+                        val provider = chat.provider
+                        (document.getElementById("temperatureDefault") as? HTMLElement)?.textContent =
+                            Localization.t("default.temperature.$provider")
+                        (document.getElementById("maxTokensDefault") as? HTMLElement)?.textContent =
+                            Localization.t("default.maxTokens.$provider")
+                        (document.getElementById("topPDefault") as? HTMLElement)?.textContent =
+                            Localization.t("default.topP.$provider")
+                        (document.getElementById("systemPromptDefault") as? HTMLElement)?.textContent =
+                            Localization.t("default.systemPrompt")
+
                         // Show modal
                         settingsModal.classList.add("show")
 

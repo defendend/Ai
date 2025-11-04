@@ -85,6 +85,15 @@ object Localization {
             "tooltip.topP" to "Alternative way to control randomness. Value of 0.9 means AI considers only top 90% most likely words. Lower values make responses more predictable. Usually used instead of temperature.",
             "tooltip.systemPrompt" to "Special instructions that define AI behavior and role. For example: 'You are a helpful assistant that answers briefly' or 'You are an expert programmer'. Affects all responses in this chat.",
 
+            // Default values display
+            "default.temperature.claude" to "Default for Claude: provider-specific",
+            "default.temperature.deepseek" to "Default for DeepSeek: 0.7",
+            "default.maxTokens.claude" to "Default for Claude: 8192",
+            "default.maxTokens.deepseek" to "Default for DeepSeek: unlimited",
+            "default.topP.claude" to "Default for Claude: 1.0",
+            "default.topP.deepseek" to "Default for DeepSeek: 1.0",
+            "default.systemPrompt" to "Default: none",
+
             // Messages
             "message.loading" to "Loading...",
             "message.loadingChats" to "Loading chats...",
@@ -161,6 +170,15 @@ object Localization {
             "tooltip.maxTokens" to "Максимальная длина ответа AI. Один токен ≈ 4 символа. Оставьте пустым для максимальной длины. Уменьшите, если нужны более короткие ответы для экономии.",
             "tooltip.topP" to "Альтернативный способ контроля случайности. Значение 0.9 означает, что AI рассматривает только топ 90% наиболее вероятных слов. Меньшие значения делают ответы более предсказуемыми. Обычно используется вместо температуры.",
             "tooltip.systemPrompt" to "Специальные инструкции, которые определяют поведение и роль AI. Например: 'Ты полезный помощник, который отвечает кратко' или 'Ты эксперт-программист'. Влияет на все ответы в этом чате.",
+
+            // Default values display
+            "default.temperature.claude" to "По умолчанию для Claude: по умолчанию провайдера",
+            "default.temperature.deepseek" to "По умолчанию для DeepSeek: 0.7",
+            "default.maxTokens.claude" to "По умолчанию для Claude: 8192",
+            "default.maxTokens.deepseek" to "По умолчанию для DeepSeek: без ограничений",
+            "default.topP.claude" to "По умолчанию для Claude: 1.0",
+            "default.topP.deepseek" to "По умолчанию для DeepSeek: 1.0",
+            "default.systemPrompt" to "По умолчанию: отсутствует",
 
             // Messages
             "message.loading" to "Загрузка...",

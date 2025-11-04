@@ -780,6 +780,13 @@ body.login-page {
     font-style: italic;
 }
 
+.setting-default {
+    margin-top: 4px;
+    font-size: 11px;
+    color: #888;
+    font-style: italic;
+}
+
 /* Tooltip styles */
 .label-with-tooltip {
     display: flex;
