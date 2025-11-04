@@ -3,9 +3,13 @@ package app
 import app.database.DatabaseFactory
 import app.routes.authRoutes
 import app.routes.chatRoutes
+import com.auth0.jwt.JWT
+import com.auth0.jwt.algorithms.Algorithm
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
+import io.ktor.server.auth.*
+import io.ktor.server.auth.jwt.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
@@ -43,6 +47,28 @@ fun Application.module() {
 
         // Allow your frontend domain
         anyHost() // TODO: В продакшене заменить на allowHost("defendend.dev")
+    }
+
+    // Configure JWT Authentication
+    val jwtSecret = System.getenv("JWT_SECRET") ?: "default-secret-change-in-production"
+    val jwtIssuer = "ai-chat"
+    val jwtAudience = "ai-chat-users"
+
+    install(Authentication) {
+        jwt("auth-jwt") {
+            verifier(JWT
+                .require(Algorithm.HMAC256(jwtSecret))
+                .withAudience(jwtAudience)
+                .withIssuer(jwtIssuer)
+                .build())
+            validate { credential ->
+                if (credential.payload.getClaim("userId").asInt() != null) {
+                    JWTPrincipal(credential.payload)
+                } else {
+                    null
+                }
+            }
+        }
     }
 
     // Configure routing

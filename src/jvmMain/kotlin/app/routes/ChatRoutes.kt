@@ -5,6 +5,8 @@ import app.models.*
 import app.services.AIService
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.auth.*
+import io.ktor.server.auth.jwt.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -12,17 +14,22 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.DeleteStatement
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 
-fun Route.chatRoutes() {
-    route("/api/chats") {
-        // Get all chats for user (temporary without auth)
-        get {
-            // TODO: Add JWT authentication
-            val userId = call.request.queryParameters["userId"]?.toIntOrNull()
+private fun ApplicationCall.getUserId(): Int? {
+    val principal = principal<JWTPrincipal>()
+    return principal?.payload?.getClaim("userId")?.asInt()
+}
 
-            if (userId == null) {
-                call.respond(HttpStatusCode.BadRequest, ErrorResponse("userId parameter is required"))
-                return@get
-            }
+fun Route.chatRoutes() {
+    authenticate("auth-jwt") {
+        route("/api/chats") {
+            // Get all chats for user
+            get {
+                val userId = call.getUserId()
+
+                if (userId == null) {
+                    call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid token"))
+                    return@get
+                }
 
             try {
                 val chats = dbQuery {
@@ -49,15 +56,15 @@ fun Route.chatRoutes() {
             }
         }
 
-        // Create new chat
-        post {
-            val userId = call.request.queryParameters["userId"]?.toIntOrNull()
-            val request = call.receive<CreateChatRequest>()
+            // Create new chat
+            post {
+                val userId = call.getUserId()
+                val request = call.receive<CreateChatRequest>()
 
-            if (userId == null) {
-                call.respond(HttpStatusCode.BadRequest, ErrorResponse("userId parameter is required"))
-                return@post
-            }
+                if (userId == null) {
+                    call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid token"))
+                    return@post
+                }
 
             try {
                 val chatId = dbQuery {
@@ -249,6 +256,7 @@ fun Route.chatRoutes() {
             } catch (e: Exception) {
                 call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Failed to send message: ${e.message}"))
             }
+        }
         }
     }
 }

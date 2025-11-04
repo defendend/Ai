@@ -1,10 +1,12 @@
 package app
 
+import kotlinx.browser.localStorage
 import kotlinx.browser.window
 import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
+import org.w3c.dom.get
 import org.w3c.fetch.Headers
 import org.w3c.fetch.RequestInit
 import kotlin.js.json
@@ -76,17 +78,23 @@ class BackendApiClient {
         isLenient = true
     }
 
-    private var userId: Int = 1 // Temporary: hardcoded user ID
+    private fun getAuthHeaders(): Headers {
+        return Headers().apply {
+            append("Content-Type", "application/json")
+            val token = localStorage["jwt_token"]
+            if (token != null) {
+                append("Authorization", "Bearer $token")
+            }
+        }
+    }
 
     suspend fun getChats(): Result<List<ChatResponse>> {
         return try {
             val response = window.fetch(
-                "$baseUrl/api/chats?userId=$userId",
+                "$baseUrl/api/chats",
                 RequestInit(
                     method = "GET",
-                    headers = Headers().apply {
-                        append("Content-Type", "application/json")
-                    }
+                    headers = getAuthHeaders()
                 )
             ).await()
 
@@ -110,12 +118,10 @@ class BackendApiClient {
             )
 
             val response = window.fetch(
-                "$baseUrl/api/chats?userId=$userId",
+                "$baseUrl/api/chats",
                 RequestInit(
                     method = "POST",
-                    headers = Headers().apply {
-                        append("Content-Type", "application/json")
-                    },
+                    headers = getAuthHeaders(),
                     body = requestBody
                 )
             ).await()
