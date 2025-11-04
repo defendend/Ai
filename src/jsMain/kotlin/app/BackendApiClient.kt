@@ -401,6 +401,7 @@ class BackendApiClient {
 
                 val chunk = result.value.unsafeCast<Uint8Array>()
                 val text = decoder.decode(chunk, js("{stream: true}")) as String
+                console.log("[SSE] Received raw chunk, length:", text.length, "content:", text.take(100))
                 buffer += text
 
                 // Process complete SSE events
