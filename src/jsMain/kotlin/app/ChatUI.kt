@@ -453,6 +453,8 @@ class ChatUI {
                             fullContent += chunk
                             assistantMessage.content = fullContent
                             contentDiv?.textContent = fullContent
+                            // Force reflow to make browser render immediately
+                            contentDiv?.offsetHeight
                             console.log("Updated contentDiv, fullContent length:", fullContent.length)
                             scrollToBottom()
                         },
