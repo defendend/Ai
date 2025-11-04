@@ -14,12 +14,13 @@ data class LocalChat(
     val id: Int,
     val title: String,
     val provider: String,
-    val messages: List<LocalMessage> = emptyList()
+    val messages: List<LocalMessage> = emptyList(),
+    val streaming: Boolean = true
 )
 
 data class LocalMessage(
     val role: String,
-    val content: String
+    var content: String
 )
 
 class ChatUI {
@@ -563,6 +564,10 @@ class ChatUI {
         messageDiv.appendChild(contentDiv)
 
         messagesContainer.appendChild(messageDiv)
+        messagesContainer.scrollTop = messagesContainer.scrollHeight.toDouble()
+    }
+
+    private fun scrollToBottom() {
         messagesContainer.scrollTop = messagesContainer.scrollHeight.toDouble()
     }
 

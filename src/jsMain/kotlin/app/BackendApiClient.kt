@@ -11,6 +11,9 @@ import org.w3c.fetch.Headers
 import org.w3c.fetch.RequestInit
 import kotlin.js.json
 
+// External declaration for browser API types
+external class Uint8Array
+
 @Serializable
 data class AuthResponse(
     val token: String,
@@ -35,7 +38,8 @@ data class ChatResponse(
     val temperature: Double? = null,
     val maxTokens: Int? = null,
     val topP: Double? = null,
-    val systemPrompt: String? = null
+    val systemPrompt: String? = null,
+    val streaming: Boolean = true
 )
 
 @Serializable
