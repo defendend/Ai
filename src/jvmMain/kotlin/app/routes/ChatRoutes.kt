@@ -378,11 +378,13 @@ fun Route.chatRoutes() {
                                 flush()
                             }
                             .collect { chunk ->
+                                println("[SSE] Sending chunk to client: '$chunk'")
                                 fullResponse.append(chunk)
                                 // Send text chunk as SSE
                                 write("event: message\n")
                                 write("data: $chunk\n\n")
                                 flush()
+                                println("[SSE] Chunk sent and flushed")
                             }
 
                         // Send done event

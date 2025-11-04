@@ -253,10 +253,14 @@ object AIService {
 
             while (!channel.isClosedForRead) {
                 val chunk = channel.readUTF8Line() ?: break
+                println("[DeepSeek Stream] Received line: ${chunk.take(100)}")
 
                 if (chunk.startsWith("data: ")) {
                     val jsonData = chunk.removePrefix("data: ")
-                    if (jsonData == "[DONE]") break
+                    if (jsonData == "[DONE]") {
+                        println("[DeepSeek Stream] Received DONE signal")
+                        break
+                    }
 
                     try {
                         val jsonElement = Json.parseToJsonElement(jsonData)
@@ -270,6 +274,7 @@ object AIService {
                             val content = delta?.get("content")?.jsonPrimitive?.content
 
                             if (content != null) {
+                                println("[DeepSeek Stream] Emitting chunk: '$content'")
                                 emit(content)
                             }
                         }
