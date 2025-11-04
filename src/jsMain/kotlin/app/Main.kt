@@ -6,6 +6,27 @@ import kotlinx.browser.window
 fun main() {
     window.onload = {
         console.log("AI Chat application started")
-        ChatUI()
+
+        // Determine which page to show based on URL path
+        val path = window.location.pathname
+
+        try {
+            when {
+                path == "/" || path == "/index.html" -> {
+                    console.log("Initializing login page")
+                    LoginUI()
+                }
+                path == "/chats" || path == "/chat.html" -> {
+                    console.log("Initializing chat page")
+                    ChatUI()
+                }
+                else -> {
+                    console.log("Unknown path: $path, defaulting to login")
+                    window.location.href = "/"
+                }
+            }
+        } catch (e: Exception) {
+            console.error("Initialization error", e)
+        }
     }
 }

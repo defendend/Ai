@@ -51,6 +51,19 @@ data class SendMessageRequest(
     val content: String
 )
 
+@Serializable
+data class LoginRequest(
+    val email: String,
+    val password: String
+)
+
+@Serializable
+data class LoginResponse(
+    val token: String,
+    val userId: Int,
+    val email: String
+)
+
 class BackendApiClient {
     private val baseUrl = window.location.origin
     private val json = Json {
@@ -247,6 +260,37 @@ class BackendApiClient {
             val text = response.text().await()
             val messages = json.decodeFromString<List<MessageResponse>>(text)
             Result.success(messages)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun login(email: String, password: String): Result<LoginResponse> {
+        return try {
+            val requestBody = json.encodeToString(
+                LoginRequest.serializer(),
+                LoginRequest(email, password)
+            )
+
+            val response = window.fetch(
+                "$baseUrl/api/auth/login",
+                RequestInit(
+                    method = "POST",
+                    headers = Headers().apply {
+                        append("Content-Type", "application/json")
+                    },
+                    body = requestBody
+                )
+            ).await()
+
+            if (!response.ok) {
+                val errorText = response.text().await()
+                return Result.failure(Exception("Invalid email or password"))
+            }
+
+            val text = response.text().await()
+            val loginResponse = json.decodeFromString<LoginResponse>(text)
+            Result.success(loginResponse)
         } catch (e: Exception) {
             Result.failure(e)
         }

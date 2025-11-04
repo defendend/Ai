@@ -1,12 +1,14 @@
 package app
 
 import kotlinx.browser.document
+import kotlinx.browser.localStorage
 import kotlinx.browser.window
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.w3c.dom.*
 import org.w3c.dom.events.KeyboardEvent
+import org.w3c.dom.get
 
 data class LocalChat(
     val id: Int,
@@ -50,6 +52,13 @@ class ChatUI {
     private var chatToRename: Int? = null
 
     init {
+        // Check authentication
+        val token = localStorage["jwt_token"]
+        if (token == null) {
+            window.location.href = "/"
+            throw RuntimeException("Not authenticated, redirecting...")
+        }
+
         // Get DOM elements
         messagesContainer = document.getElementById("messagesContainer") as HTMLDivElement
         messageInput = document.getElementById("messageInput") as HTMLTextAreaElement

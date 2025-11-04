@@ -3,70 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Chat - Claude</title>
+    <title>Login - AI Chat</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="root">
-        <div class="app-container">
-            <div class="sidebar">
-                <button id="newChatBtn" class="new-chat-btn">+ New Chat</button>
-                <div class="chat-history">
-                    <h3 id="recentChatsTitle">Recent Chats</h3>
-                    <div id="chatHistoryList" class="chat-history-list"></div>
-                </div>
-            </div>
-            <div class="chat-container">
-                <div class="chat-header">
-                    <h1>AI Chat</h1>
-                </div>
-                <div id="messagesContainer" class="messages-container"></div>
-                <div class="input-container">
-                    <textarea id="messageInput" placeholder="Type your message here..." rows="3"></textarea>
-                    <div class="input-controls">
-                        <select id="providerSelect" class="provider-select">
-                            <option value="deepseek" selected>DeepSeek</option>
-                            <option value="claude">Claude AI</option>
-                        </select>
-                        <button id="sendBtn">Send</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div id="login-container" class="login-container">
+        <div class="login-card">
+            <h1 class="login-title">AI Chat</h1>
+            <p class="login-subtitle">Welcome back! Please login to continue.</p>
 
-        <!-- Delete Confirmation Modal -->
-        <div id="deleteModal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>Delete Chat</h2>
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="email" class="form-label">Email</label>
+                    <input
+                        type="email"
+                        id="email"
+                        class="form-input"
+                        placeholder="Enter your email"
+                        required
+                    >
                 </div>
-                <div class="modal-body">
-                    <p>Are you sure you want to delete "<span id="deleteChatTitle"></span>"?</p>
-                    <p class="modal-warning">This action cannot be undone.</p>
-                </div>
-                <div class="modal-footer">
-                    <button id="cancelDeleteBtn" class="modal-btn modal-btn-cancel">Cancel</button>
-                    <button id="confirmDeleteBtn" class="modal-btn modal-btn-delete">Delete</button>
-                </div>
-            </div>
-        </div>
 
-        <!-- Rename Chat Modal -->
-        <div id="renameModal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>Rename Chat</h2>
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+                    <input
+                        type="password"
+                        id="password"
+                        class="form-input"
+                        placeholder="Enter your password"
+                        required
+                    >
                 </div>
-                <div class="modal-body">
-                    <label for="renameChatInput" class="modal-label">New chat name:</label>
-                    <input type="text" id="renameChatInput" class="modal-input" placeholder="Enter chat name...">
-                </div>
-                <div class="modal-footer">
-                    <button id="cancelRenameBtn" class="modal-btn modal-btn-cancel">Cancel</button>
-                    <button id="confirmRenameBtn" class="modal-btn modal-btn-primary">Rename</button>
-                </div>
-            </div>
-        </div>
+
+                <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+                <button type="submit" id="loginBtn" class="login-btn">
+                    Sign In
+                </button>
+            </form>
         </div>
     </div>
     <script src="ai-chat.js"></script>
