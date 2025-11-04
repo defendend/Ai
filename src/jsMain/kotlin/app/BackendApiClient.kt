@@ -274,7 +274,8 @@ class BackendApiClient {
         temperature: Double?,
         maxTokens: Int?,
         topP: Double?,
-        systemPrompt: String?
+        systemPrompt: String?,
+        streaming: Boolean
     ): Result<Unit> {
         return try {
             // Always send all AI parameters to allow resetting to null
@@ -290,6 +291,8 @@ class BackendApiClient {
             } else {
                 parts.add(""""systemPrompt":null""")
             }
+
+            parts.add(""""streaming":$streaming""")
 
             val requestBody = "{${parts.joinToString(",")}}"
 
@@ -339,6 +342,94 @@ class BackendApiClient {
             Result.success(messages)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    suspend fun sendMessageStreaming(
+        chatId: Int,
+        content: String,
+        onChunk: (String) -> Unit,
+        onComplete: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        try {
+            val requestBody = json.encodeToString(
+                SendMessageRequest.serializer(),
+                SendMessageRequest(content)
+            )
+
+            val response = window.fetch(
+                "$baseUrl/api/chats/$chatId/messages/stream",
+                RequestInit(
+                    method = "POST",
+                    headers = getAuthHeaders(),
+                    body = requestBody
+                )
+            ).await()
+
+            if (!response.ok) {
+                val errorText = response.text().await()
+                onError("Failed to send message: $errorText")
+                return
+            }
+
+            // Read the SSE stream
+            val reader = response.body?.getReader()
+            if (reader == null) {
+                onError("No response body")
+                return
+            }
+
+            val decoder = js("new TextDecoder()")
+            var buffer = ""
+
+            while (true) {
+                val result = reader.read().await()
+                val done = result.done as Boolean
+
+                if (done) {
+                    break
+                }
+
+                val chunk = result.value as Uint8Array
+                val text = decoder.decode(chunk, js("{stream: true}")) as String
+                buffer += text
+
+                // Process complete SSE events
+                val lines = buffer.split("\n")
+                buffer = lines.last() // Keep incomplete line in buffer
+
+                for (i in 0 until lines.size - 1) {
+                    val line = lines[i]
+
+                    if (line.startsWith("event: message")) {
+                        // Next line should be data
+                        if (i + 1 < lines.size - 1) {
+                            val dataLine = lines[i + 1]
+                            if (dataLine.startsWith("data: ")) {
+                                val data = dataLine.substring(6)
+                                onChunk(data)
+                            }
+                        }
+                    } else if (line.startsWith("event: done")) {
+                        onComplete()
+                        return
+                    } else if (line.startsWith("event: error")) {
+                        if (i + 1 < lines.size - 1) {
+                            val dataLine = lines[i + 1]
+                            if (dataLine.startsWith("data: ")) {
+                                val error = dataLine.substring(6)
+                                onError(error)
+                                return
+                            }
+                        }
+                    }
+                }
+            }
+
+            onComplete()
+        } catch (e: Exception) {
+            onError("Error: ${e.message}")
         }
     }
 

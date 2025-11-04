@@ -54,6 +54,7 @@ class ChatUI {
     private val maxTokensInput: HTMLInputElement
     private val topPInput: HTMLInputElement
     private val systemPromptInput: HTMLTextAreaElement
+    private val streamingCheckbox: HTMLInputElement
     private val confirmSettingsBtn: HTMLButtonElement
     private val cancelSettingsBtn: HTMLButtonElement
 
@@ -91,6 +92,7 @@ class ChatUI {
         maxTokensInput = document.getElementById("maxTokensInput") as HTMLInputElement
         topPInput = document.getElementById("topPInput") as HTMLInputElement
         systemPromptInput = document.getElementById("systemPromptInput") as HTMLTextAreaElement
+        streamingCheckbox = document.getElementById("streamingCheckbox") as HTMLInputElement
         confirmSettingsBtn = document.getElementById("confirmSettingsBtn") as HTMLButtonElement
         cancelSettingsBtn = document.getElementById("cancelSettingsBtn") as HTMLButtonElement
 
@@ -415,6 +417,10 @@ class ChatUI {
             return
         }
 
+        // Get current chat to check streaming setting
+        val currentChat = chats.find { it.id == chatId }
+        val useStreaming = currentChat?.streaming ?: true
+
         // Display user message immediately
         val userMessage = LocalMessage(role = "user", content = content)
         currentMessages.add(userMessage)
@@ -428,51 +434,92 @@ class ChatUI {
 
         scope.launch {
             try {
-                val result = apiClient.sendMessage(chatId, content)
+                if (useStreaming) {
+                    // Streaming mode
+                    val assistantMessage = LocalMessage(role = "assistant", content = "")
+                    currentMessages.add(assistantMessage)
 
-                result.fold(
-                    onSuccess = { messages ->
-                        console.log("Received messages:", messages)
+                    val messageDiv = displayMessageForStreaming(assistantMessage)
+                    val contentDiv = messageDiv.querySelector(".message-content") as? HTMLDivElement
 
-                        // Remove typing indicator
-                        hideTypingIndicator()
+                    var fullContent = ""
 
-                        // Backend returns both user and assistant messages
-                        // Find the assistant message (last one)
-                        val assistantMsg = messages.lastOrNull { it.role == "assistant" }
-                        console.log("Assistant message:", assistantMsg)
-
-                        if (assistantMsg != null) {
-                            val localMsg = LocalMessage(
-                                role = assistantMsg.role,
-                                content = assistantMsg.content
-                            )
-                            currentMessages.add(localMsg)
-                            displayMessageAnimated(localMsg)
+                    apiClient.sendMessageStreaming(
+                        chatId = chatId,
+                        content = content,
+                        onChunk = { chunk ->
+                            fullContent += chunk
+                            assistantMessage.content = fullContent
+                            contentDiv?.textContent = fullContent
+                            scrollToBottom()
+                        },
+                        onComplete = {
+                            hideTypingIndicator()
+                            sendBtn.disabled = false
 
                             // Update chat title from first message
                             if (currentMessages.size <= 2) {
                                 updateChatTitle(chatId, content.take(30))
                             }
-                        } else {
-                            console.warn("No assistant message found in response")
+                        },
+                        onError = { error ->
+                            hideTypingIndicator()
+                            sendBtn.disabled = false
+
+                            contentDiv?.textContent = Localization.t("error.tryAgain")
+                            console.error("Streaming error:", error)
                         }
-                    },
-                    onFailure = { error ->
-                        // Remove typing indicator
-                        hideTypingIndicator()
+                    )
+                } else {
+                    // Non-streaming mode (original behavior)
+                    val result = apiClient.sendMessage(chatId, content)
 
-                        // Show error as AI message
-                        val errorMsg = LocalMessage(
-                            role = "assistant",
-                            content = Localization.t("error.tryAgain")
-                        )
-                        currentMessages.add(errorMsg)
-                        displayMessage(errorMsg)
+                    result.fold(
+                        onSuccess = { messages ->
+                            console.log("Received messages:", messages)
 
-                        console.error("Failed to send message", error)
-                    }
-                )
+                            // Remove typing indicator
+                            hideTypingIndicator()
+
+                            // Backend returns both user and assistant messages
+                            // Find the assistant message (last one)
+                            val assistantMsg = messages.lastOrNull { it.role == "assistant" }
+                            console.log("Assistant message:", assistantMsg)
+
+                            if (assistantMsg != null) {
+                                val localMsg = LocalMessage(
+                                    role = assistantMsg.role,
+                                    content = assistantMsg.content
+                                )
+                                currentMessages.add(localMsg)
+                                displayMessageAnimated(localMsg)
+
+                                // Update chat title from first message
+                                if (currentMessages.size <= 2) {
+                                    updateChatTitle(chatId, content.take(30))
+                                }
+                            } else {
+                                console.warn("No assistant message found in response")
+                            }
+                        },
+                        onFailure = { error ->
+                            // Remove typing indicator
+                            hideTypingIndicator()
+
+                            // Show error as AI message
+                            val errorMsg = LocalMessage(
+                                role = "assistant",
+                                content = Localization.t("error.tryAgain")
+                            )
+                            currentMessages.add(errorMsg)
+                            displayMessage(errorMsg)
+
+                            console.error("Failed to send message", error)
+                        }
+                    )
+
+                    sendBtn.disabled = false
+                }
             } catch (e: Exception) {
                 // Remove typing indicator
                 hideTypingIndicator()
@@ -486,7 +533,6 @@ class ChatUI {
                 displayMessage(errorMsg)
 
                 console.error("Error sending message", e)
-            } finally {
                 sendBtn.disabled = false
             }
         }
@@ -518,6 +564,27 @@ class ChatUI {
 
         messagesContainer.appendChild(messageDiv)
         messagesContainer.scrollTop = messagesContainer.scrollHeight.toDouble()
+    }
+
+    private fun displayMessageForStreaming(message: LocalMessage): HTMLDivElement {
+        val messageDiv = document.createElement("div") as HTMLDivElement
+        messageDiv.className = "message ${message.role}"
+
+        val avatar = document.createElement("div") as HTMLDivElement
+        avatar.className = "message-avatar"
+        avatar.textContent = if (message.role == "user") "U" else "AI"
+
+        val contentDiv = document.createElement("div") as HTMLDivElement
+        contentDiv.className = "message-content"
+        contentDiv.textContent = message.content
+
+        messageDiv.appendChild(avatar)
+        messageDiv.appendChild(contentDiv)
+
+        messagesContainer.appendChild(messageDiv)
+        scrollToBottom()
+
+        return messageDiv
     }
 
     private fun displayMessageAnimated(message: LocalMessage) {
@@ -787,6 +854,7 @@ class ChatUI {
                         maxTokensInput.value = chat.maxTokens?.toString() ?: ""
                         topPInput.value = chat.topP?.toString() ?: ""
                         systemPromptInput.value = chat.systemPrompt ?: ""
+                        streamingCheckbox.checked = chat.streaming
 
                         // Update default value displays based on provider
                         val provider = chat.provider
@@ -835,6 +903,7 @@ class ChatUI {
         val maxTokens = maxTokensInput.value.trim().toIntOrNull()
         val topP = topPInput.value.trim().toDoubleOrNull()
         val systemPrompt = systemPromptInput.value.trim().ifEmpty { null }
+        val streaming = streamingCheckbox.checked
 
         hideSettingsModal()
 
@@ -845,7 +914,8 @@ class ChatUI {
                     temperature = temperature,
                     maxTokens = maxTokens,
                     topP = topP,
-                    systemPrompt = systemPrompt
+                    systemPrompt = systemPrompt,
+                    streaming = streaming
                 )
 
                 result.fold(

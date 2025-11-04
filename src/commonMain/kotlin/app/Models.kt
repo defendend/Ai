@@ -65,7 +65,8 @@ data class DeepSeekRequest(
     val maxTokens: Int? = null,
     val temperature: Double? = null,
     @SerialName("top_p")
-    val topP: Double? = null
+    val topP: Double? = null,
+    val stream: Boolean = false
 )
 
 @Serializable

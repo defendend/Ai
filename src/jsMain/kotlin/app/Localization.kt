@@ -84,6 +84,7 @@ object Localization {
             "tooltip.maxTokens" to "Maximum length of AI response. One token ≈ 4 characters. Leave empty for maximum length. Reduce if you need shorter answers to save costs.",
             "tooltip.topP" to "Alternative way to control randomness. Value of 0.9 means AI considers only top 90% most likely words. Lower values make responses more predictable. Usually used instead of temperature.",
             "tooltip.systemPrompt" to "Special instructions that define AI behavior and role. For example: 'You are a helpful assistant that answers briefly' or 'You are an expert programmer'. Affects all responses in this chat.",
+            "tooltip.streaming" to "When enabled, AI responses are displayed in real-time as they are generated, similar to ChatGPT. When disabled, you'll see the complete response at once after generation is complete.",
 
             // Default values display
             "default.temperature.claude" to "Default for Claude: provider-specific",
@@ -170,6 +171,7 @@ object Localization {
             "tooltip.maxTokens" to "Максимальная длина ответа AI. Один токен ≈ 4 символа. Оставьте пустым для максимальной длины. Уменьшите, если нужны более короткие ответы для экономии.",
             "tooltip.topP" to "Альтернативный способ контроля случайности. Значение 0.9 означает, что AI рассматривает только топ 90% наиболее вероятных слов. Меньшие значения делают ответы более предсказуемыми. Обычно используется вместо температуры.",
             "tooltip.systemPrompt" to "Специальные инструкции, которые определяют поведение и роль AI. Например: 'Ты полезный помощник, который отвечает кратко' или 'Ты эксперт-программист'. Влияет на все ответы в этом чате.",
+            "tooltip.streaming" to "При включении ответы AI отображаются в реальном времени по мере их генерации, как в ChatGPT. При отключении вы увидите полный ответ сразу после завершения генерации.",
 
             // Default values display
             "default.temperature.claude" to "По умолчанию для Claude: по умолчанию провайдера",

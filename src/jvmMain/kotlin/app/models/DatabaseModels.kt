@@ -25,6 +25,7 @@ object Chats : IntIdTable("chats") {
     val maxTokens = integer("max_tokens").nullable().default(null)
     val topP = double("top_p").nullable().default(null)
     val systemPrompt = text("system_prompt").nullable().default(null)
+    val streaming = bool("streaming").default(true) // Enable streaming by default
 }
 
 object Messages : IntIdTable("messages") {
@@ -53,7 +54,8 @@ data class ChatDTO(
     val temperature: Double? = null,
     val maxTokens: Int? = null,
     val topP: Double? = null,
-    val systemPrompt: String? = null
+    val systemPrompt: String? = null,
+    val streaming: Boolean = true
 )
 
 @Serializable
@@ -102,7 +104,8 @@ data class UpdateChatRequest(
     val temperature: Double? = null,
     val maxTokens: Int? = null,
     val topP: Double? = null,
-    val systemPrompt: String? = null
+    val systemPrompt: String? = null,
+    val streaming: Boolean? = null
 )
 
 @Serializable
@@ -132,7 +135,8 @@ fun ResultRow.toChatDTO(messageCount: Int = 0, lastMessage: String? = null) = Ch
     temperature = this[Chats.temperature],
     maxTokens = this[Chats.maxTokens],
     topP = this[Chats.topP],
-    systemPrompt = this[Chats.systemPrompt]
+    systemPrompt = this[Chats.systemPrompt],
+    streaming = this[Chats.streaming]
 )
 
 fun ResultRow.toMessageDTO() = MessageDTO(

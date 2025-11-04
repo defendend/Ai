@@ -10,6 +10,8 @@ import io.ktor.server.auth.jwt.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collect
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.statements.DeleteStatement
 import org.jetbrains.exposed.sql.transactions.TransactionManager
@@ -121,6 +123,7 @@ fun Route.chatRoutes() {
                         it[maxTokens] = request.maxTokens
                         it[topP] = request.topP
                         it[systemPrompt] = request.systemPrompt
+                        request.streaming?.let { streamingValue -> it[streaming] = streamingValue }
                     } > 0
                 }
 
@@ -290,6 +293,108 @@ fun Route.chatRoutes() {
                 call.respond(messages)
             } catch (e: Exception) {
                 call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Failed to send message: ${e.message}"))
+            }
+        }
+
+        // Send message with streaming (SSE)
+        post("/{chatId}/messages/stream") {
+            val userId = call.getUserId()
+            val chatId = call.parameters["chatId"]?.toIntOrNull()
+            val request = call.receive<SendMessageRequest>()
+
+            if (userId == null) {
+                call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid token"))
+                return@post
+            }
+
+            if (chatId == null) {
+                call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid chat ID"))
+                return@post
+            }
+
+            try {
+                // Get chat info and verify ownership
+                val chat = dbQuery {
+                    Chats.select { (Chats.id eq chatId) and (Chats.userId eq userId) }.singleOrNull()
+                }
+
+                if (chat == null) {
+                    call.respond(HttpStatusCode.NotFound, ErrorResponse("Chat not found"))
+                    return@post
+                }
+
+                // Save user message
+                val userMessageId = dbQuery {
+                    Messages.insert {
+                        it[Messages.chatId] = chatId
+                        it[role] = "user"
+                        it[content] = request.content
+                    }[Messages.id].value
+                }
+
+                // Get all messages for context
+                val allMessages = dbQuery {
+                    Messages.select { Messages.chatId eq chatId }
+                        .orderBy(Messages.timestamp to SortOrder.ASC)
+                        .map { app.Message(role = it[Messages.role], content = it[Messages.content]) }
+                }
+
+                // Call AI service with streaming
+                val provider = chat[Chats.provider]
+                val parameters = AIService.AIParameters(
+                    temperature = chat[Chats.temperature],
+                    maxTokens = chat[Chats.maxTokens],
+                    topP = chat[Chats.topP],
+                    systemPrompt = chat[Chats.systemPrompt],
+                    streaming = true
+                )
+
+                // Set SSE headers
+                call.response.header(HttpHeaders.ContentType, "text/event-stream")
+                call.response.header(HttpHeaders.CacheControl, "no-cache")
+                call.response.header(HttpHeaders.Connection, "keep-alive")
+
+                // Collect all chunks to save as complete message
+                val fullResponse = StringBuilder()
+
+                // Stream the response
+                call.respondTextWriter(contentType = ContentType.Text.EventStream) {
+                    AIService.sendMessageStreaming(provider, allMessages, parameters)
+                        .catch { e ->
+                            // Send error event
+                            write("event: error\n")
+                            write("data: ${e.message}\n\n")
+                            flush()
+                        }
+                        .collect { chunk ->
+                            fullResponse.append(chunk)
+                            // Send text chunk as SSE
+                            write("event: message\n")
+                            write("data: $chunk\n\n")
+                            flush()
+                        }
+
+                    // Send done event
+                    write("event: done\n")
+                    write("data: {\"status\":\"complete\"}\n\n")
+                    flush()
+                }
+
+                // Save AI response to database after streaming is complete
+                dbQuery {
+                    Messages.insert {
+                        it[Messages.chatId] = chatId
+                        it[role] = "assistant"
+                        it[content] = fullResponse.toString()
+                    }
+
+                    // Update chat updatedAt
+                    Chats.update({ Chats.id eq chatId }) {
+                        it[updatedAt] = org.jetbrains.exposed.sql.javatime.CurrentTimestamp()
+                    }
+                }
+            } catch (e: Exception) {
+                call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Failed to send streaming message: ${e.message}"))
             }
         }
         }
