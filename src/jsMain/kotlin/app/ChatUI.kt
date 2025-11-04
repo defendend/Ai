@@ -444,8 +444,10 @@ class ChatUI {
                     val contentDiv = messageDiv.querySelector(".message-content") as? HTMLDivElement
 
                     var fullContent = ""
-                    var lastUpdateTime = 0.0
-                    var updateScheduled = false
+                    var pendingUpdate = false
+
+                    // Update UI immediately on first chunk, then throttle
+                    var isFirstChunk = true
 
                     apiClient.sendMessageStreaming(
                         chatId = chatId,
@@ -455,18 +457,21 @@ class ChatUI {
                             fullContent += chunk
                             assistantMessage.content = fullContent
 
-                            val currentTime = js("Date.now()") as Double
-
-                            // Throttle DOM updates to max every 30ms for smooth animation
-                            if (currentTime - lastUpdateTime >= 30 && !updateScheduled) {
-                                updateScheduled = true
-                                window.requestAnimationFrame {
+                            // Update immediately on first chunk for responsiveness
+                            if (isFirstChunk) {
+                                contentDiv?.textContent = fullContent
+                                scrollToBottom()
+                                isFirstChunk = false
+                                console.log("First chunk rendered")
+                            } else if (!pendingUpdate) {
+                                // Schedule update with setTimeout for guaranteed delay
+                                pendingUpdate = true
+                                window.setTimeout({
                                     contentDiv?.textContent = fullContent
                                     console.log("Updated contentDiv, fullContent length:", fullContent.length)
                                     scrollToBottom()
-                                    lastUpdateTime = js("Date.now()") as Double
-                                    updateScheduled = false
-                                }
+                                    pendingUpdate = false
+                                }, 50)
                             }
                         },
                         onComplete = {
