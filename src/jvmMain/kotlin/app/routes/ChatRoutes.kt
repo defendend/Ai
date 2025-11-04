@@ -103,12 +103,9 @@ fun Route.chatRoutes() {
                 return@patch
             }
 
-            if (request.provider == null && request.title == null &&
-                request.temperature == null && request.maxTokens == null &&
-                request.topP == null && request.systemPrompt == null) {
-                call.respond(HttpStatusCode.BadRequest, ErrorResponse("At least one field must be provided"))
-                return@patch
-            }
+            // Provider and title are optional updates
+            // AI parameters are always updated (can be set to null to reset to defaults)
+            // No validation needed - at least one field is implicitly provided
 
             try {
                 val updated = dbQuery {
@@ -118,10 +115,12 @@ fun Route.chatRoutes() {
                     Chats.update({ (Chats.id eq chatId) and (Chats.userId eq userId) }) {
                         request.provider?.let { newProvider -> it[provider] = newProvider }
                         request.title?.let { newTitle -> it[title] = newTitle }
-                        if (request.temperature != null) it[temperature] = request.temperature
-                        if (request.maxTokens != null) it[maxTokens] = request.maxTokens
-                        if (request.topP != null) it[topP] = request.topP
-                        if (request.systemPrompt != null) it[systemPrompt] = request.systemPrompt
+
+                        // For AI parameters, always update even if null (to reset to default)
+                        it[temperature] = request.temperature
+                        it[maxTokens] = request.maxTokens
+                        it[topP] = request.topP
+                        it[systemPrompt] = request.systemPrompt
                     } > 0
                 }
 

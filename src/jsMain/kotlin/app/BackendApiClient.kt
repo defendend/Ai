@@ -277,24 +277,18 @@ class BackendApiClient {
         systemPrompt: String?
     ): Result<Unit> {
         return try {
+            // Always send all AI parameters to allow resetting to null
             val parts = mutableListOf<String>()
 
-            if (temperature != null) {
-                parts.add(""""temperature":$temperature""")
-            }
-            if (maxTokens != null) {
-                parts.add(""""maxTokens":$maxTokens""")
-            }
-            if (topP != null) {
-                parts.add(""""topP":$topP""")
-            }
+            parts.add(if (temperature != null) """"temperature":$temperature""" else """"temperature":null""")
+            parts.add(if (maxTokens != null) """"maxTokens":$maxTokens""" else """"maxTokens":null""")
+            parts.add(if (topP != null) """"topP":$topP""" else """"topP":null""")
+
             if (systemPrompt != null) {
                 val escaped = systemPrompt.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n")
                 parts.add(""""systemPrompt":"$escaped"""")
-            }
-
-            if (parts.isEmpty()) {
-                return Result.success(Unit)
+            } else {
+                parts.add(""""systemPrompt":null""")
             }
 
             val requestBody = "{${parts.joinToString(",")}}"
