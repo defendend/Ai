@@ -253,6 +253,24 @@ class ChatUI {
         cancelRenameBtn.textContent = Localization.t("modal.cancelButton")
         confirmRenameBtn.textContent = Localization.t("modal.renameButton")
 
+        // Update settings modal
+        (settingsModal.querySelector(".modal-header h2") as? HTMLElement)?.textContent = Localization.t("modal.settingsTitle")
+        val settingsLabels = settingsModal.querySelectorAll(".modal-label")
+        (settingsLabels[0] as? HTMLElement)?.textContent = Localization.t("modal.temperatureLabel")
+        (settingsLabels[1] as? HTMLElement)?.textContent = Localization.t("modal.maxTokensLabel")
+        (settingsLabels[2] as? HTMLElement)?.textContent = Localization.t("modal.topPLabel")
+        (settingsLabels[3] as? HTMLElement)?.textContent = Localization.t("modal.systemPromptLabel")
+        temperatureInput.placeholder = Localization.t("modal.temperaturePlaceholder")
+        maxTokensInput.placeholder = Localization.t("modal.maxTokensPlaceholder")
+        topPInput.placeholder = Localization.t("modal.topPPlaceholder")
+        systemPromptInput.placeholder = Localization.t("modal.systemPromptPlaceholder")
+        (settingsModal.querySelector(".settings-hint") as? HTMLElement)?.textContent = Localization.t("modal.settingsHint")
+        confirmSettingsBtn.textContent = Localization.t("modal.saveButton")
+        cancelSettingsBtn.textContent = Localization.t("modal.cancelButton")
+
+        // Update settings button
+        settingsBtn.textContent = "⚙️ ${Localization.t("settings.button")}"
+
         // Update header title
         updateChatHeaderTitle()
     }
@@ -747,7 +765,7 @@ class ChatUI {
     private fun showSettingsModal() {
         val chatId = currentChatId
         if (chatId == null) {
-            showError("Please select or create a chat first")
+            showError(Localization.t("error.pleaseSelectChat"))
             return
         }
 
@@ -773,12 +791,12 @@ class ChatUI {
                     },
                     onFailure = { error ->
                         console.error("Failed to load chat settings", error)
-                        showError("Failed to load chat settings: ${error.message}")
+                        showError("${Localization.t("error.failedToLoadSettings")}: ${error.message}")
                     }
                 )
             } catch (e: Exception) {
                 console.error("Error loading chat settings", e)
-                showError("Error loading chat settings: ${e.message}")
+                showError("${Localization.t("error.failedToLoadSettings")}: ${e.message}")
             }
         }
     }
@@ -818,12 +836,12 @@ class ChatUI {
                     },
                     onFailure = { error ->
                         console.error("Failed to update chat settings", error)
-                        showError("Failed to save settings: ${error.message}")
+                        showError("${Localization.t("error.failedToSaveSettings")}: ${error.message}")
                     }
                 )
             } catch (e: Exception) {
                 console.error("Error updating chat settings", e)
-                showError("Error saving settings: ${e.message}")
+                showError("${Localization.t("error.failedToSaveSettings")}: ${e.message}")
             }
         }
     }

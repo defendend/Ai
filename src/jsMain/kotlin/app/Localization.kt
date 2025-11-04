@@ -67,6 +67,17 @@ object Localization {
             "modal.renameLabel" to "New chat name:",
             "modal.renamePlaceholder" to "Enter chat name...",
             "modal.renameButton" to "Rename",
+            "modal.settingsTitle" to "AI Parameters",
+            "modal.temperatureLabel" to "Temperature (0-2):",
+            "modal.temperaturePlaceholder" to "Default: depends on provider",
+            "modal.maxTokensLabel" to "Max Tokens:",
+            "modal.maxTokensPlaceholder" to "Default: 8192 (Claude) / unlimited (DeepSeek)",
+            "modal.topPLabel" to "Top P (0-1):",
+            "modal.topPPlaceholder" to "Default: 1",
+            "modal.systemPromptLabel" to "System Prompt:",
+            "modal.systemPromptPlaceholder" to "Optional system prompt...",
+            "modal.settingsHint" to "Leave fields empty to use default values",
+            "modal.saveButton" to "Save",
 
             // Messages
             "message.loading" to "Loading...",
@@ -82,9 +93,13 @@ object Localization {
             "error.failedToDeleteChat" to "Failed to delete chat",
             "error.failedToSendMessage" to "Failed to send message",
             "error.tryAgain" to "Something went wrong. Please try again.",
+            "error.failedToLoadSettings" to "Failed to load settings",
+            "error.failedToSaveSettings" to "Failed to save settings",
+            "error.pleaseSelectChat" to "Please select or create a chat first",
 
             // Settings
             "settings.language" to "Language",
+            "settings.button" to "Settings",
 
             // Login
             "login.title" to "Ai Chats",
@@ -123,6 +138,17 @@ object Localization {
             "modal.renameLabel" to "Новое название чата:",
             "modal.renamePlaceholder" to "Введите название чата...",
             "modal.renameButton" to "Переименовать",
+            "modal.settingsTitle" to "Параметры AI",
+            "modal.temperatureLabel" to "Температура (0-2):",
+            "modal.temperaturePlaceholder" to "По умолчанию: зависит от провайдера",
+            "modal.maxTokensLabel" to "Макс. токенов:",
+            "modal.maxTokensPlaceholder" to "По умолчанию: 8192 (Claude) / без ограничений (DeepSeek)",
+            "modal.topPLabel" to "Top P (0-1):",
+            "modal.topPPlaceholder" to "По умолчанию: 1",
+            "modal.systemPromptLabel" to "Системный промпт:",
+            "modal.systemPromptPlaceholder" to "Опциональный системный промпт...",
+            "modal.settingsHint" to "Оставьте поля пустыми для использования значений по умолчанию",
+            "modal.saveButton" to "Сохранить",
 
             // Messages
             "message.loading" to "Загрузка...",
@@ -138,9 +164,13 @@ object Localization {
             "error.failedToDeleteChat" to "Не удалось удалить чат",
             "error.failedToSendMessage" to "Не удалось отправить сообщение",
             "error.tryAgain" to "Что-то пошло не так. Попробуйте снова.",
+            "error.failedToLoadSettings" to "Не удалось загрузить настройки",
+            "error.failedToSaveSettings" to "Не удалось сохранить настройки",
+            "error.pleaseSelectChat" to "Пожалуйста, выберите или создайте чат",
 
             // Settings
             "settings.language" to "Язык",
+            "settings.button" to "Настройки",
 
             // Login
             "login.title" to "Ai Chats",
