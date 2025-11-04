@@ -31,7 +31,11 @@ data class ChatResponse(
     val messageCount: Int,
     val lastMessage: String?,
     val createdAt: String,
-    val updatedAt: String
+    val updatedAt: String,
+    val temperature: Double? = null,
+    val maxTokens: Int? = null,
+    val topP: Double? = null,
+    val systemPrompt: String? = null
 )
 
 @Serializable
@@ -139,6 +143,34 @@ class BackendApiClient {
         }
     }
 
+    suspend fun getChat(chatId: Int): Result<ChatResponse> {
+        return try {
+            val response = window.fetch(
+                "$baseUrl/api/chats/$chatId",
+                RequestInit(
+                    method = "GET",
+                    headers = getAuthHeaders()
+                )
+            ).await()
+
+            if (!response.ok) {
+                val errorText = response.text().await()
+                return Result.failure(Exception("Failed to fetch chat: $errorText"))
+            }
+
+            val text = response.text().await()
+
+            // Backend returns ChatWithMessagesDTO, extract chat object
+            val chatData = json.parseToJsonElement(text).jsonObject
+            val chatJson = chatData["chat"]?.toString() ?: "{}"
+            val chat = json.decodeFromString<ChatResponse>(chatJson)
+
+            Result.success(chat)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun getChatWithMessages(chatId: Int): Result<List<MessageResponse>> {
         return try {
             val response = window.fetch(
@@ -229,6 +261,56 @@ class BackendApiClient {
             if (!response.ok) {
                 val errorText = response.text().await()
                 return Result.failure(Exception("Failed to update chat title: $errorText"))
+            }
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateChatSettings(
+        chatId: Int,
+        temperature: Double?,
+        maxTokens: Int?,
+        topP: Double?,
+        systemPrompt: String?
+    ): Result<Unit> {
+        return try {
+            val parts = mutableListOf<String>()
+
+            if (temperature != null) {
+                parts.add(""""temperature":$temperature""")
+            }
+            if (maxTokens != null) {
+                parts.add(""""maxTokens":$maxTokens""")
+            }
+            if (topP != null) {
+                parts.add(""""topP":$topP""")
+            }
+            if (systemPrompt != null) {
+                val escaped = systemPrompt.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n")
+                parts.add(""""systemPrompt":"$escaped"""")
+            }
+
+            if (parts.isEmpty()) {
+                return Result.success(Unit)
+            }
+
+            val requestBody = "{${parts.joinToString(",")}}"
+
+            val response = window.fetch(
+                "$baseUrl/api/chats/$chatId",
+                RequestInit(
+                    method = "PATCH",
+                    headers = getAuthHeaders(),
+                    body = requestBody
+                )
+            ).await()
+
+            if (!response.ok) {
+                val errorText = response.text().await()
+                return Result.failure(Exception("Failed to update chat settings: $errorText"))
             }
 
             Result.success(Unit)

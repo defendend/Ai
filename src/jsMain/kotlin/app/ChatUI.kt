@@ -48,6 +48,14 @@ class ChatUI {
     private val cancelRenameBtn: HTMLButtonElement
     private val chatHeaderTitle: HTMLHeadingElement
     private val logoutBtn: HTMLButtonElement
+    private val settingsBtn: HTMLButtonElement
+    private val settingsModal: HTMLDivElement
+    private val temperatureInput: HTMLInputElement
+    private val maxTokensInput: HTMLInputElement
+    private val topPInput: HTMLInputElement
+    private val systemPromptInput: HTMLTextAreaElement
+    private val confirmSettingsBtn: HTMLButtonElement
+    private val cancelSettingsBtn: HTMLButtonElement
 
     private var chatToDelete: Int? = null
     private var chatToRename: Int? = null
@@ -77,6 +85,14 @@ class ChatUI {
         cancelRenameBtn = document.getElementById("cancelRenameBtn") as HTMLButtonElement
         chatHeaderTitle = document.querySelector(".chat-header h1") as HTMLHeadingElement
         logoutBtn = document.getElementById("logoutBtn") as HTMLButtonElement
+        settingsBtn = document.getElementById("settingsBtn") as HTMLButtonElement
+        settingsModal = document.getElementById("settingsModal") as HTMLDivElement
+        temperatureInput = document.getElementById("temperatureInput") as HTMLInputElement
+        maxTokensInput = document.getElementById("maxTokensInput") as HTMLInputElement
+        topPInput = document.getElementById("topPInput") as HTMLInputElement
+        systemPromptInput = document.getElementById("systemPromptInput") as HTMLTextAreaElement
+        confirmSettingsBtn = document.getElementById("confirmSettingsBtn") as HTMLButtonElement
+        cancelSettingsBtn = document.getElementById("cancelSettingsBtn") as HTMLButtonElement
 
         setupEventListeners()
         updateUITexts()
@@ -180,6 +196,30 @@ class ChatUI {
                         hideRenameModal()
                     }
                 }
+            }
+            null
+        }
+
+        // Settings modal event listeners
+        settingsBtn.onclick = {
+            showSettingsModal()
+            null
+        }
+
+        confirmSettingsBtn.onclick = {
+            handleSaveSettings()
+            null
+        }
+
+        cancelSettingsBtn.onclick = {
+            hideSettingsModal()
+            null
+        }
+
+        settingsModal.onclick = { event ->
+            // Close modal if clicked outside the modal content
+            if (event.target == settingsModal) {
+                hideSettingsModal()
             }
             null
         }
@@ -702,6 +742,90 @@ class ChatUI {
     private fun hideLoading() {
         val loadingMsg = messagesContainer.querySelector(".loading-message")
         loadingMsg?.let { messagesContainer.removeChild(it) }
+    }
+
+    private fun showSettingsModal() {
+        val chatId = currentChatId
+        if (chatId == null) {
+            showError("Please select or create a chat first")
+            return
+        }
+
+        // Load current chat to get settings
+        scope.launch {
+            try {
+                val result = apiClient.getChat(chatId)
+                result.fold(
+                    onSuccess = { chat ->
+                        // Populate inputs with current settings
+                        temperatureInput.value = chat.temperature?.toString() ?: ""
+                        maxTokensInput.value = chat.maxTokens?.toString() ?: ""
+                        topPInput.value = chat.topP?.toString() ?: ""
+                        systemPromptInput.value = chat.systemPrompt ?: ""
+
+                        // Show modal
+                        settingsModal.classList.add("show")
+
+                        // Focus first input after modal is shown
+                        kotlinx.browser.window.setTimeout({
+                            temperatureInput.focus()
+                        }, 100)
+                    },
+                    onFailure = { error ->
+                        console.error("Failed to load chat settings", error)
+                        showError("Failed to load chat settings: ${error.message}")
+                    }
+                )
+            } catch (e: Exception) {
+                console.error("Error loading chat settings", e)
+                showError("Error loading chat settings: ${e.message}")
+            }
+        }
+    }
+
+    private fun hideSettingsModal() {
+        settingsModal.classList.remove("show")
+    }
+
+    private fun handleSaveSettings() {
+        val chatId = currentChatId
+        if (chatId == null) {
+            hideSettingsModal()
+            return
+        }
+
+        // Parse input values
+        val temperature = temperatureInput.value.trim().toDoubleOrNull()
+        val maxTokens = maxTokensInput.value.trim().toIntOrNull()
+        val topP = topPInput.value.trim().toDoubleOrNull()
+        val systemPrompt = systemPromptInput.value.trim().ifEmpty { null }
+
+        hideSettingsModal()
+
+        scope.launch {
+            try {
+                val result = apiClient.updateChatSettings(
+                    chatId = chatId,
+                    temperature = temperature,
+                    maxTokens = maxTokens,
+                    topP = topP,
+                    systemPrompt = systemPrompt
+                )
+
+                result.fold(
+                    onSuccess = {
+                        console.log("Chat settings updated successfully")
+                    },
+                    onFailure = { error ->
+                        console.error("Failed to update chat settings", error)
+                        showError("Failed to save settings: ${error.message}")
+                    }
+                )
+            } catch (e: Exception) {
+                console.error("Error updating chat settings", e)
+                showError("Error saving settings: ${e.message}")
+            }
+        }
     }
 
     private fun handleLogout() {
