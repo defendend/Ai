@@ -98,9 +98,16 @@ object AIService {
         val apiKey = System.getenv("DEEPSEEK_API_KEY")
             ?: throw IllegalStateException("DEEPSEEK_API_KEY environment variable is not set")
 
+        // Add system prompt as first message if provided
+        val messagesWithSystem = if (parameters.systemPrompt != null) {
+            listOf(Message(role = "system", content = parameters.systemPrompt)) + messages
+        } else {
+            messages
+        }
+
         val request = DeepSeekRequest(
             model = "deepseek-chat",
-            messages = messages,
+            messages = messagesWithSystem,
             maxTokens = parameters.maxTokens,
             temperature = parameters.temperature ?: 0.7,
             topP = parameters.topP,
@@ -213,9 +220,16 @@ object AIService {
         val apiKey = System.getenv("DEEPSEEK_API_KEY")
             ?: throw IllegalStateException("DEEPSEEK_API_KEY environment variable is not set")
 
+        // Add system prompt as first message if provided
+        val messagesWithSystem = if (parameters.systemPrompt != null) {
+            listOf(Message(role = "system", content = parameters.systemPrompt)) + messages
+        } else {
+            messages
+        }
+
         val request = DeepSeekRequest(
             model = "deepseek-chat",
-            messages = messages,
+            messages = messagesWithSystem,
             maxTokens = parameters.maxTokens,
             temperature = parameters.temperature ?: 0.7,
             topP = parameters.topP,
