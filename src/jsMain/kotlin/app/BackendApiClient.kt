@@ -388,9 +388,11 @@ class BackendApiClient {
             val decoder = js("new TextDecoder()")
             var buffer = ""
 
+            val readerDynamic: dynamic = reader
             while (true) {
-                val readPromise = reader.asDynamic().read().unsafeCast<Promise<dynamic>>()
-                val result = readPromise.await()
+                @Suppress("UNCHECKED_CAST")
+                val readResult = readerDynamic.read() as Promise<Any?>
+                val result: dynamic = readResult.await()
                 val done = result.done as Boolean
 
                 if (done) {
