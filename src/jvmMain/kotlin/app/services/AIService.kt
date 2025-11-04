@@ -48,7 +48,7 @@ object AIService {
         val request = AnthropicRequest(
             model = "claude-3-5-sonnet-20241022",
             messages = messages,
-            maxTokens = parameters.maxTokens ?: 4096,
+            maxTokens = parameters.maxTokens ?: 8192,
             temperature = parameters.temperature,
             topP = parameters.topP,
             system = parameters.systemPrompt,
