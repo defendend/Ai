@@ -10,6 +10,7 @@ import org.w3c.dom.get
 import org.w3c.fetch.Headers
 import org.w3c.fetch.RequestInit
 import kotlin.js.json
+import kotlin.js.Promise
 
 // External declaration for browser API types
 external class Uint8Array
@@ -388,14 +389,15 @@ class BackendApiClient {
             var buffer = ""
 
             while (true) {
-                val result = reader.read().await()
+                val readPromise = reader.asDynamic().read().unsafeCast<Promise<dynamic>>()
+                val result = readPromise.await()
                 val done = result.done as Boolean
 
                 if (done) {
                     break
                 }
 
-                val chunk = result.value as Uint8Array
+                val chunk = result.value.unsafeCast<Uint8Array>()
                 val text = decoder.decode(chunk, js("{stream: true}")) as String
                 buffer += text
 
