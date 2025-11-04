@@ -145,9 +145,7 @@ class BackendApiClient {
                 "$baseUrl/api/chats/$chatId",
                 RequestInit(
                     method = "GET",
-                    headers = Headers().apply {
-                        append("Content-Type", "application/json")
-                    }
+                    headers = getAuthHeaders()
                 )
             ).await()
 
@@ -177,9 +175,7 @@ class BackendApiClient {
                 "$baseUrl/api/chats/$chatId",
                 RequestInit(
                     method = "PATCH",
-                    headers = Headers().apply {
-                        append("Content-Type", "application/json")
-                    },
+                    headers = getAuthHeaders(),
                     body = requestBody
                 )
             ).await()
@@ -201,9 +197,7 @@ class BackendApiClient {
                 "$baseUrl/api/chats/$chatId",
                 RequestInit(
                     method = "DELETE",
-                    headers = Headers().apply {
-                        append("Content-Type", "application/json")
-                    }
+                    headers = getAuthHeaders()
                 )
             ).await()
 
@@ -227,9 +221,7 @@ class BackendApiClient {
                 "$baseUrl/api/chats/$chatId",
                 RequestInit(
                     method = "PATCH",
-                    headers = Headers().apply {
-                        append("Content-Type", "application/json")
-                    },
+                    headers = getAuthHeaders(),
                     body = requestBody
                 )
             ).await()
@@ -256,9 +248,7 @@ class BackendApiClient {
                 "$baseUrl/api/chats/$chatId/messages",
                 RequestInit(
                     method = "POST",
-                    headers = Headers().apply {
-                        append("Content-Type", "application/json")
-                    },
+                    headers = getAuthHeaders(),
                     body = requestBody
                 )
             ).await()

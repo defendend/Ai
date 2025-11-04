@@ -89,8 +89,14 @@ fun Route.chatRoutes() {
 
         // Update chat (provider and/or title)
         patch("/{chatId}") {
+            val userId = call.getUserId()
             val chatId = call.parameters["chatId"]?.toIntOrNull()
             val request = call.receive<UpdateChatRequest>()
+
+            if (userId == null) {
+                call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid token"))
+                return@patch
+            }
 
             if (chatId == null) {
                 call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid chat ID"))
@@ -104,10 +110,10 @@ fun Route.chatRoutes() {
 
             try {
                 val updated = dbQuery {
-                    val existing = Chats.select { Chats.id eq chatId }.singleOrNull()
+                    val existing = Chats.select { (Chats.id eq chatId) and (Chats.userId eq userId) }.singleOrNull()
                     if (existing == null) return@dbQuery false
 
-                    Chats.update({ Chats.id eq chatId }) {
+                    Chats.update({ (Chats.id eq chatId) and (Chats.userId eq userId) }) {
                         request.provider?.let { newProvider -> it[provider] = newProvider }
                         request.title?.let { newTitle -> it[title] = newTitle }
                     } > 0
@@ -125,7 +131,13 @@ fun Route.chatRoutes() {
 
         // Delete chat
         delete("/{chatId}") {
+            val userId = call.getUserId()
             val chatIdParam = call.parameters["chatId"]?.toIntOrNull()
+
+            if (userId == null) {
+                call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid token"))
+                return@delete
+            }
 
             if (chatIdParam == null) {
                 call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid chat ID"))
@@ -134,15 +146,15 @@ fun Route.chatRoutes() {
 
             try {
                 dbQuery {
-                    // First check if chat exists
-                    val chatExists = Chats.select { Chats.id eq chatIdParam }.count() > 0
+                    // Check if chat exists and belongs to user
+                    val chatExists = Chats.select { (Chats.id eq chatIdParam) and (Chats.userId eq userId) }.count() > 0
 
                     if (chatExists) {
                         // Delete all messages in the chat
                         TransactionManager.current().exec("DELETE FROM messages WHERE chat_id = $chatIdParam")
 
                         // Then delete the chat itself
-                        TransactionManager.current().exec("DELETE FROM chats WHERE id = $chatIdParam")
+                        TransactionManager.current().exec("DELETE FROM chats WHERE id = $chatIdParam AND user_id = $userId")
 
                         call.respond(HttpStatusCode.OK, mapOf("success" to true))
                     } else {
@@ -156,7 +168,13 @@ fun Route.chatRoutes() {
 
         // Get chat with messages
         get("/{chatId}") {
+            val userId = call.getUserId()
             val chatId = call.parameters["chatId"]?.toIntOrNull()
+
+            if (userId == null) {
+                call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid token"))
+                return@get
+            }
 
             if (chatId == null) {
                 call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid chat ID"))
@@ -165,7 +183,7 @@ fun Route.chatRoutes() {
 
             try {
                 val result = dbQuery {
-                    val chatRow = Chats.select { Chats.id eq chatId }.singleOrNull()
+                    val chatRow = Chats.select { (Chats.id eq chatId) and (Chats.userId eq userId) }.singleOrNull()
                     if (chatRow == null) return@dbQuery null
 
                     val messages = Messages.select { Messages.chatId eq chatId }
@@ -190,8 +208,14 @@ fun Route.chatRoutes() {
 
         // Send message to chat
         post("/{chatId}/messages") {
+            val userId = call.getUserId()
             val chatId = call.parameters["chatId"]?.toIntOrNull()
             val request = call.receive<SendMessageRequest>()
+
+            if (userId == null) {
+                call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid token"))
+                return@post
+            }
 
             if (chatId == null) {
                 call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid chat ID"))
@@ -199,9 +223,9 @@ fun Route.chatRoutes() {
             }
 
             try {
-                // Get chat info
+                // Get chat info and verify ownership
                 val chat = dbQuery {
-                    Chats.select { Chats.id eq chatId }.singleOrNull()
+                    Chats.select { (Chats.id eq chatId) and (Chats.userId eq userId) }.singleOrNull()
                 }
 
                 if (chat == null) {
