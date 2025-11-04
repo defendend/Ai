@@ -9,7 +9,10 @@ import kotlinx.coroutines.launch
 import org.w3c.dom.HTMLButtonElement
 import org.w3c.dom.HTMLDivElement
 import org.w3c.dom.HTMLFormElement
+import org.w3c.dom.HTMLHeadingElement
 import org.w3c.dom.HTMLInputElement
+import org.w3c.dom.HTMLLabelElement
+import org.w3c.dom.HTMLParagraphElement
 import org.w3c.dom.events.Event
 import org.w3c.dom.get
 import org.w3c.dom.set
@@ -23,6 +26,10 @@ class LoginUI {
     private val passwordInput: HTMLInputElement
     private val loginBtn: HTMLButtonElement
     private val errorMessage: HTMLDivElement
+    private val loginTitle: HTMLHeadingElement
+    private val loginSubtitle: HTMLParagraphElement
+    private val emailLabel: HTMLLabelElement
+    private val passwordLabel: HTMLLabelElement
 
     init {
         // Check if already logged in
@@ -37,7 +44,12 @@ class LoginUI {
         passwordInput = document.getElementById("password") as HTMLInputElement
         loginBtn = document.getElementById("loginBtn") as HTMLButtonElement
         errorMessage = document.getElementById("errorMessage") as HTMLDivElement
+        loginTitle = document.getElementById("loginTitle") as HTMLHeadingElement
+        loginSubtitle = document.getElementById("loginSubtitle") as HTMLParagraphElement
+        emailLabel = document.getElementById("emailLabel") as HTMLLabelElement
+        passwordLabel = document.getElementById("passwordLabel") as HTMLLabelElement
 
+        updateUITexts()
         setupEventListeners()
     }
 
@@ -47,6 +59,16 @@ class LoginUI {
             handleLogin()
             null
         })
+    }
+
+    private fun updateUITexts() {
+        loginTitle.textContent = Localization.t("login.title")
+        loginSubtitle.textContent = Localization.t("login.subtitle")
+        emailLabel.textContent = Localization.t("login.emailLabel")
+        passwordLabel.textContent = Localization.t("login.passwordLabel")
+        emailInput.placeholder = Localization.t("login.emailPlaceholder")
+        passwordInput.placeholder = Localization.t("login.passwordPlaceholder")
+        loginBtn.textContent = Localization.t("login.submitButton")
     }
 
     private fun handleLogin() {
@@ -59,7 +81,7 @@ class LoginUI {
         }
 
         loginBtn.disabled = true
-        loginBtn.textContent = "Signing in..."
+        loginBtn.textContent = Localization.t("login.submitting")
         hideError()
 
         scope.launch {
@@ -79,14 +101,14 @@ class LoginUI {
                     onFailure = { error ->
                         showError(error.message ?: "Login failed. Please check your credentials.")
                         loginBtn.disabled = false
-                        loginBtn.textContent = "Sign In"
+                        loginBtn.textContent = Localization.t("login.submitButton")
                     }
                 )
             } catch (e: Exception) {
                 console.error("Login error", e)
                 showError("An error occurred. Please try again.")
                 loginBtn.disabled = false
-                loginBtn.textContent = "Sign In"
+                loginBtn.textContent = Localization.t("login.submitButton")
             }
         }
     }

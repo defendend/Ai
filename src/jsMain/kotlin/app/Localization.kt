@@ -84,7 +84,17 @@ object Localization {
             "error.tryAgain" to "Something went wrong. Please try again.",
 
             // Settings
-            "settings.language" to "Language"
+            "settings.language" to "Language",
+
+            // Login
+            "login.title" to "Ai Chats",
+            "login.subtitle" to "Welcome back! Please login to continue.",
+            "login.emailLabel" to "Email",
+            "login.emailPlaceholder" to "Enter your email",
+            "login.passwordLabel" to "Password",
+            "login.passwordPlaceholder" to "Enter your password",
+            "login.submitButton" to "Sign In",
+            "login.submitting" to "Signing in..."
         ),
         "ru" to mapOf(
             // Header
@@ -130,7 +140,17 @@ object Localization {
             "error.tryAgain" to "Что-то пошло не так. Попробуйте снова.",
 
             // Settings
-            "settings.language" to "Язык"
+            "settings.language" to "Язык",
+
+            // Login
+            "login.title" to "Ai Chats",
+            "login.subtitle" to "Добро пожаловать! Войдите, чтобы продолжить.",
+            "login.emailLabel" to "Email",
+            "login.emailPlaceholder" to "Введите ваш email",
+            "login.passwordLabel" to "Пароль",
+            "login.passwordPlaceholder" to "Введите ваш пароль",
+            "login.submitButton" to "Войти",
+            "login.submitting" to "Вход..."
         )
     )
 }
