@@ -58,10 +58,15 @@ data class LoginRequest(
 )
 
 @Serializable
+data class UserDTO(
+    val id: Int,
+    val email: String
+)
+
+@Serializable
 data class LoginResponse(
     val token: String,
-    val userId: Int,
-    val email: String
+    val user: UserDTO
 )
 
 class BackendApiClient {

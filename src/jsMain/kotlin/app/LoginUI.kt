@@ -70,7 +70,8 @@ class LoginUI {
                     onSuccess = { response ->
                         // Save JWT token
                         localStorage["jwt_token"] = response.token
-                        localStorage["user_id"] = response.userId.toString()
+                        localStorage["user_id"] = response.user.id.toString()
+                        localStorage["user_email"] = response.user.email
 
                         // Redirect to chats
                         window.location.href = "/chats"
