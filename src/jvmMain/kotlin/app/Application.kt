@@ -15,7 +15,9 @@ import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.response.*
+import io.ktor.server.request.*
 import io.ktor.server.routing.*
+import io.ktor.util.date.*
 import kotlinx.serialization.json.Json
 
 fun main() {
@@ -26,6 +28,21 @@ fun main() {
 fun Application.module() {
     // Initialize database
     DatabaseFactory.init()
+
+    // Configure request logging
+    intercept(ApplicationCallPipeline.Monitoring) {
+        val startTime = System.currentTimeMillis()
+        try {
+            proceed()
+        } finally {
+            val duration = System.currentTimeMillis() - startTime
+            val status = call.response.status()?.value ?: 0
+            val method = call.request.httpMethod.value
+            val uri = call.request.uri
+            val userAgent = call.request.headers["User-Agent"]?.take(50) ?: "Unknown"
+            println("[$method] $uri -> $status (${duration}ms) | UA: $userAgent")
+        }
+    }
 
     // Configure serialization
     install(ContentNegotiation) {
