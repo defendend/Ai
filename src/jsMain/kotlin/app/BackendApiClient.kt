@@ -418,6 +418,8 @@ class BackendApiClient {
                             val data = dataLine.substring(6)
                             console.log("[SSE] Calling onChunk with:", data)
                             onChunk(data)
+                            // Yield to event loop to allow setInterval to execute
+                            kotlinx.coroutines.delay(0)
                         }
                     } else if (line.startsWith("event: done")) {
                         console.log("[SSE] Stream done")
