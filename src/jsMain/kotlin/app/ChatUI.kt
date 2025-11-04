@@ -268,6 +268,13 @@ class ChatUI {
         confirmSettingsBtn.textContent = Localization.t("modal.saveButton")
         cancelSettingsBtn.textContent = Localization.t("modal.cancelButton")
 
+        // Update tooltips
+        val tooltipIcons = settingsModal.querySelectorAll(".tooltip-icon")
+        tooltipIcons.asList().forEach { icon ->
+            val key = (icon as HTMLElement).getAttribute("data-tooltip-key") ?: return@forEach
+            icon.setAttribute("data-tooltip", Localization.t("tooltip.$key"))
+        }
+
         // Update settings button
         settingsBtn.textContent = "⚙️ ${Localization.t("settings.button")}"
 

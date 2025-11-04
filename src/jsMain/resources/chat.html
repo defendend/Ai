@@ -81,22 +81,34 @@
                 <div class="modal-body">
                     <div class="settings-grid">
                         <div class="setting-item">
-                            <label for="temperatureInput" class="modal-label">Temperature (0-2):</label>
+                            <div class="label-with-tooltip">
+                                <label for="temperatureInput" class="modal-label">Temperature (0-2):</label>
+                                <span class="tooltip-icon" data-tooltip-key="temperature">ℹ️</span>
+                            </div>
                             <input type="number" id="temperatureInput" class="modal-input" min="0" max="2" step="0.1" placeholder="Default: depends on provider">
                         </div>
 
                         <div class="setting-item">
-                            <label for="maxTokensInput" class="modal-label">Max Tokens:</label>
+                            <div class="label-with-tooltip">
+                                <label for="maxTokensInput" class="modal-label">Max Tokens:</label>
+                                <span class="tooltip-icon" data-tooltip-key="maxTokens">ℹ️</span>
+                            </div>
                             <input type="number" id="maxTokensInput" class="modal-input" min="1" max="32000" step="1" placeholder="Default: 8192 (Claude) / unlimited (DeepSeek)">
                         </div>
 
                         <div class="setting-item">
-                            <label for="topPInput" class="modal-label">Top P (0-1):</label>
+                            <div class="label-with-tooltip">
+                                <label for="topPInput" class="modal-label">Top P (0-1):</label>
+                                <span class="tooltip-icon" data-tooltip-key="topP">ℹ️</span>
+                            </div>
                             <input type="number" id="topPInput" class="modal-input" min="0" max="1" step="0.01" placeholder="Default: 1">
                         </div>
 
                         <div class="setting-item setting-full">
-                            <label for="systemPromptInput" class="modal-label">System Prompt:</label>
+                            <div class="label-with-tooltip">
+                                <label for="systemPromptInput" class="modal-label">System Prompt:</label>
+                                <span class="tooltip-icon" data-tooltip-key="systemPrompt">ℹ️</span>
+                            </div>
                             <textarea id="systemPromptInput" class="modal-textarea" rows="4" placeholder="Optional system prompt..."></textarea>
                         </div>
                     </div>
