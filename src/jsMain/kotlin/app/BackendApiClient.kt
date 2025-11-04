@@ -406,26 +406,22 @@ class BackendApiClient {
                 for (i in 0 until lines.size - 1) {
                     val line = lines[i]
 
-                    if (line.startsWith("event: message")) {
+                    if (line.startsWith("event: message") && i + 1 < lines.size) {
                         // Next line should be data
-                        if (i + 1 < lines.size - 1) {
-                            val dataLine = lines[i + 1]
-                            if (dataLine.startsWith("data: ")) {
-                                val data = dataLine.substring(6)
-                                onChunk(data)
-                            }
+                        val dataLine = lines[i + 1]
+                        if (dataLine.startsWith("data: ")) {
+                            val data = dataLine.substring(6)
+                            onChunk(data)
                         }
                     } else if (line.startsWith("event: done")) {
                         onComplete()
                         return
-                    } else if (line.startsWith("event: error")) {
-                        if (i + 1 < lines.size - 1) {
-                            val dataLine = lines[i + 1]
-                            if (dataLine.startsWith("data: ")) {
-                                val error = dataLine.substring(6)
-                                onError(error)
-                                return
-                            }
+                    } else if (line.startsWith("event: error") && i + 1 < lines.size) {
+                        val dataLine = lines[i + 1]
+                        if (dataLine.startsWith("data: ")) {
+                            val error = dataLine.substring(6)
+                            onError(error)
+                            return
                         }
                     }
                 }
