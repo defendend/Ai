@@ -47,6 +47,7 @@ class ChatUI {
     private val confirmRenameBtn: HTMLButtonElement
     private val cancelRenameBtn: HTMLButtonElement
     private val chatHeaderTitle: HTMLHeadingElement
+    private val logoutBtn: HTMLButtonElement
 
     private var chatToDelete: Int? = null
     private var chatToRename: Int? = null
@@ -75,6 +76,7 @@ class ChatUI {
         confirmRenameBtn = document.getElementById("confirmRenameBtn") as HTMLButtonElement
         cancelRenameBtn = document.getElementById("cancelRenameBtn") as HTMLButtonElement
         chatHeaderTitle = document.querySelector(".chat-header h1") as HTMLHeadingElement
+        logoutBtn = document.getElementById("logoutBtn") as HTMLButtonElement
 
         setupEventListeners()
         updateUITexts()
@@ -93,6 +95,8 @@ class ChatUI {
         }
 
         newChatBtn.onclick = { createNewChat(); null }
+
+        logoutBtn.onclick = { handleLogout(); null }
 
         providerSelect.onchange = {
             val newProvider = providerSelect.value
@@ -698,5 +702,15 @@ class ChatUI {
     private fun hideLoading() {
         val loadingMsg = messagesContainer.querySelector(".loading-message")
         loadingMsg?.let { messagesContainer.removeChild(it) }
+    }
+
+    private fun handleLogout() {
+        // Clear JWT token and user data from localStorage
+        localStorage.removeItem("jwt_token")
+        localStorage.removeItem("user_id")
+        localStorage.removeItem("user_email")
+
+        // Redirect to login page
+        window.location.href = "/"
     }
 }
