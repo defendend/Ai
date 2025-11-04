@@ -26,7 +26,7 @@ object AIService {
 
         install(Logging) {
             logger = Logger.DEFAULT
-            level = LogLevel.INFO
+            level = LogLevel.BODY
             sanitizeHeader { header -> header == "Authorization" || header == "x-api-key" }
         }
 
