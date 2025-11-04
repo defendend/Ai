@@ -22,22 +22,36 @@ object AIService {
         }
     }
 
-    suspend fun sendMessage(provider: String, messages: List<Message>): String {
+    data class AIParameters(
+        val temperature: Double? = null,
+        val maxTokens: Int? = null,
+        val topP: Double? = null,
+        val systemPrompt: String? = null
+    )
+
+    suspend fun sendMessage(
+        provider: String,
+        messages: List<Message>,
+        parameters: AIParameters = AIParameters()
+    ): String {
         return when (provider) {
-            "claude" -> sendClaudeMessage(messages)
-            "deepseek" -> sendDeepSeekMessage(messages)
+            "claude" -> sendClaudeMessage(messages, parameters)
+            "deepseek" -> sendDeepSeekMessage(messages, parameters)
             else -> throw IllegalArgumentException("Unknown provider: $provider")
         }
     }
 
-    private suspend fun sendClaudeMessage(messages: List<Message>): String {
+    private suspend fun sendClaudeMessage(messages: List<Message>, parameters: AIParameters): String {
         val apiKey = System.getenv("CLAUDE_API_KEY")
             ?: throw IllegalStateException("CLAUDE_API_KEY environment variable is not set")
 
         val request = AnthropicRequest(
             model = "claude-3-5-sonnet-20241022",
             messages = messages,
-            maxTokens = 4096,
+            maxTokens = parameters.maxTokens ?: 4096,
+            temperature = parameters.temperature,
+            topP = parameters.topP,
+            system = parameters.systemPrompt,
             stream = false
         )
 
@@ -62,15 +76,16 @@ object AIService {
         }
     }
 
-    private suspend fun sendDeepSeekMessage(messages: List<Message>): String {
+    private suspend fun sendDeepSeekMessage(messages: List<Message>, parameters: AIParameters): String {
         val apiKey = System.getenv("DEEPSEEK_API_KEY")
             ?: throw IllegalStateException("DEEPSEEK_API_KEY environment variable is not set")
 
         val request = DeepSeekRequest(
             model = "deepseek-chat",
             messages = messages,
-            maxTokens = 4096,
-            temperature = 0.7
+            maxTokens = parameters.maxTokens,
+            temperature = parameters.temperature ?: 0.7,
+            topP = parameters.topP
         )
 
         try {

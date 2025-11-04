@@ -19,6 +19,12 @@ object Chats : IntIdTable("chats") {
     val provider = varchar("provider", 50) // "claude" or "deepseek"
     val createdAt = timestamp("created_at").defaultExpression(CurrentTimestamp())
     val updatedAt = timestamp("updated_at").defaultExpression(CurrentTimestamp())
+
+    // AI Parameters
+    val temperature = double("temperature").nullable().default(null)
+    val maxTokens = integer("max_tokens").nullable().default(null)
+    val topP = double("top_p").nullable().default(null)
+    val systemPrompt = text("system_prompt").nullable().default(null)
 }
 
 object Messages : IntIdTable("messages") {
@@ -43,7 +49,11 @@ data class ChatDTO(
     val messageCount: Int,
     val lastMessage: String?,
     val createdAt: String,
-    val updatedAt: String
+    val updatedAt: String,
+    val temperature: Double? = null,
+    val maxTokens: Int? = null,
+    val topP: Double? = null,
+    val systemPrompt: String? = null
 )
 
 @Serializable
@@ -88,7 +98,11 @@ data class CreateChatRequest(
 @Serializable
 data class UpdateChatRequest(
     val provider: String? = null,
-    val title: String? = null
+    val title: String? = null,
+    val temperature: Double? = null,
+    val maxTokens: Int? = null,
+    val topP: Double? = null,
+    val systemPrompt: String? = null
 )
 
 @Serializable
@@ -114,7 +128,11 @@ fun ResultRow.toChatDTO(messageCount: Int = 0, lastMessage: String? = null) = Ch
     messageCount = messageCount,
     lastMessage = lastMessage,
     createdAt = this[Chats.createdAt].toString(),
-    updatedAt = this[Chats.updatedAt].toString()
+    updatedAt = this[Chats.updatedAt].toString(),
+    temperature = this[Chats.temperature],
+    maxTokens = this[Chats.maxTokens],
+    topP = this[Chats.topP],
+    systemPrompt = this[Chats.systemPrompt]
 )
 
 fun ResultRow.toMessageDTO() = MessageDTO(

@@ -103,8 +103,10 @@ fun Route.chatRoutes() {
                 return@patch
             }
 
-            if (request.provider == null && request.title == null) {
-                call.respond(HttpStatusCode.BadRequest, ErrorResponse("At least one field (provider or title) must be provided"))
+            if (request.provider == null && request.title == null &&
+                request.temperature == null && request.maxTokens == null &&
+                request.topP == null && request.systemPrompt == null) {
+                call.respond(HttpStatusCode.BadRequest, ErrorResponse("At least one field must be provided"))
                 return@patch
             }
 
@@ -116,6 +118,10 @@ fun Route.chatRoutes() {
                     Chats.update({ (Chats.id eq chatId) and (Chats.userId eq userId) }) {
                         request.provider?.let { newProvider -> it[provider] = newProvider }
                         request.title?.let { newTitle -> it[title] = newTitle }
+                        if (request.temperature != null) it[temperature] = request.temperature
+                        if (request.maxTokens != null) it[maxTokens] = request.maxTokens
+                        if (request.topP != null) it[topP] = request.topP
+                        if (request.systemPrompt != null) it[systemPrompt] = request.systemPrompt
                     } > 0
                 }
 
@@ -251,7 +257,13 @@ fun Route.chatRoutes() {
 
                 // Call AI service
                 val provider = chat[Chats.provider]
-                val aiResponse = AIService.sendMessage(provider, allMessages)
+                val parameters = AIService.AIParameters(
+                    temperature = chat[Chats.temperature],
+                    maxTokens = chat[Chats.maxTokens],
+                    topP = chat[Chats.topP],
+                    systemPrompt = chat[Chats.systemPrompt]
+                )
+                val aiResponse = AIService.sendMessage(provider, allMessages, parameters)
 
                 // Save AI response
                 val assistantMessageId = dbQuery {

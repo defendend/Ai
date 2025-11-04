@@ -14,7 +14,11 @@ data class AnthropicRequest(
     val model: String,
     val messages: List<Message>,
     @SerialName("max_tokens")
-    val maxTokens: Int,
+    val maxTokens: Int? = null,
+    val temperature: Double? = null,
+    @SerialName("top_p")
+    val topP: Double? = null,
+    val system: String? = null,
     val stream: Boolean = false
 )
 
@@ -58,8 +62,10 @@ data class DeepSeekRequest(
     val model: String,
     val messages: List<Message>,
     @SerialName("max_tokens")
-    val maxTokens: Int = 4096,
-    val temperature: Double = 0.7
+    val maxTokens: Int? = null,
+    val temperature: Double? = null,
+    @SerialName("top_p")
+    val topP: Double? = null
 )
 
 @Serializable
