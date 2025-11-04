@@ -14,6 +14,7 @@ import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
+import io.ktor.server.plugins.doublereceive.*
 import io.ktor.server.response.*
 import io.ktor.server.request.*
 import io.ktor.server.routing.*
@@ -29,9 +30,23 @@ fun Application.module() {
     // Initialize database
     DatabaseFactory.init()
 
+    // Enable double receive to read request body multiple times
+    install(DoubleReceive)
+
     // Configure request logging
     intercept(ApplicationCallPipeline.Monitoring) {
         val startTime = System.currentTimeMillis()
+
+        // Capture request body for non-streaming requests
+        val requestBody = if (call.request.httpMethod in listOf(HttpMethod.Post, HttpMethod.Put, HttpMethod.Patch) &&
+            !call.request.uri.contains("/stream")) {
+            try {
+                call.receiveText()
+            } catch (e: Exception) {
+                null
+            }
+        } else null
+
         try {
             proceed()
         } finally {
@@ -39,8 +54,22 @@ fun Application.module() {
             val status = call.response.status()?.value ?: 0
             val method = call.request.httpMethod.value
             val uri = call.request.uri
+            val queryParams = call.request.queryParameters.entries()
+                .joinToString(", ") { "${it.key}=${it.value}" }
+                .takeIf { it.isNotEmpty() }
+                ?.let { "?$it" } ?: ""
             val userAgent = call.request.headers["User-Agent"]?.take(50) ?: "Unknown"
-            println("[$method] $uri -> $status (${duration}ms) | UA: $userAgent")
+
+            val bodyLog = requestBody?.let { body ->
+                // Sanitize sensitive fields
+                val sanitized = body
+                    .replace(Regex("\"password\"\\s*:\\s*\"[^\"]*\""), "\"password\":\"***\"")
+                    .replace(Regex("\"token\"\\s*:\\s*\"[^\"]*\""), "\"token\":\"***\"")
+                val truncated = if (sanitized.length > 200) sanitized.take(200) + "..." else sanitized
+                " | Body: $truncated"
+            } ?: ""
+
+            println("[$method] $uri$queryParams -> $status (${duration}ms)$bodyLog | UA: $userAgent")
         }
     }
 

@@ -58,6 +58,7 @@ kotlin {
                 implementation("io.ktor:ktor-server-cors:2.3.7")
                 implementation("io.ktor:ktor-server-auth:2.3.7")
                 implementation("io.ktor:ktor-server-auth-jwt:2.3.7")
+                implementation("io.ktor:ktor-server-double-receive:2.3.7")
 
                 // Ktor Client (for Claude/DeepSeek API)
                 implementation("io.ktor:ktor-client-core:2.3.7")
