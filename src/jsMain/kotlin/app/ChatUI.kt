@@ -444,10 +444,18 @@ class ChatUI {
                     val contentDiv = messageDiv.querySelector(".message-content") as? HTMLDivElement
 
                     var fullContent = ""
-                    var pendingUpdate = false
+                    var displayedContent = ""
+                    var updateIntervalId: Int? = null
 
-                    // Update UI immediately on first chunk, then throttle
-                    var isFirstChunk = true
+                    // Start interval to update UI every 50ms
+                    updateIntervalId = window.setInterval({
+                        if (displayedContent != fullContent) {
+                            displayedContent = fullContent
+                            contentDiv?.textContent = fullContent
+                            console.log("Updated contentDiv, fullContent length:", fullContent.length)
+                            scrollToBottom()
+                        }
+                    }, 50)
 
                     apiClient.sendMessageStreaming(
                         chatId = chatId,
@@ -456,25 +464,12 @@ class ChatUI {
                             console.log("Received chunk:", chunk)
                             fullContent += chunk
                             assistantMessage.content = fullContent
-
-                            // Update immediately on first chunk for responsiveness
-                            if (isFirstChunk) {
-                                contentDiv?.textContent = fullContent
-                                scrollToBottom()
-                                isFirstChunk = false
-                                console.log("First chunk rendered")
-                            } else if (!pendingUpdate) {
-                                // Schedule update with setTimeout for guaranteed delay
-                                pendingUpdate = true
-                                window.setTimeout({
-                                    contentDiv?.textContent = fullContent
-                                    console.log("Updated contentDiv, fullContent length:", fullContent.length)
-                                    scrollToBottom()
-                                    pendingUpdate = false
-                                }, 50)
-                            }
+                            // Content will be displayed by interval
                         },
                         onComplete = {
+                            // Stop the update interval
+                            updateIntervalId?.let { window.clearInterval(it) }
+
                             // Final update to ensure all text is shown
                             contentDiv?.textContent = fullContent
                             scrollToBottom()
@@ -488,6 +483,9 @@ class ChatUI {
                             }
                         },
                         onError = { error ->
+                            // Stop the update interval
+                            updateIntervalId?.let { window.clearInterval(it) }
+
                             hideTypingIndicator()
                             sendBtn.disabled = false
 
