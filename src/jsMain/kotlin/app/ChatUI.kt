@@ -444,6 +444,8 @@ class ChatUI {
                     val contentDiv = messageDiv.querySelector(".message-content") as? HTMLDivElement
 
                     var fullContent = ""
+                    var lastUpdateTime = 0.0
+                    var updateScheduled = false
 
                     apiClient.sendMessageStreaming(
                         chatId = chatId,
@@ -453,14 +455,25 @@ class ChatUI {
                             fullContent += chunk
                             assistantMessage.content = fullContent
 
-                            // Use requestAnimationFrame to force browser to render
-                            window.requestAnimationFrame {
-                                contentDiv?.textContent = fullContent
-                                console.log("Updated contentDiv, fullContent length:", fullContent.length)
-                                scrollToBottom()
+                            val currentTime = js("Date.now()") as Double
+
+                            // Throttle DOM updates to max every 30ms for smooth animation
+                            if (currentTime - lastUpdateTime >= 30 && !updateScheduled) {
+                                updateScheduled = true
+                                window.requestAnimationFrame {
+                                    contentDiv?.textContent = fullContent
+                                    console.log("Updated contentDiv, fullContent length:", fullContent.length)
+                                    scrollToBottom()
+                                    lastUpdateTime = js("Date.now()") as Double
+                                    updateScheduled = false
+                                }
                             }
                         },
                         onComplete = {
+                            // Final update to ensure all text is shown
+                            contentDiv?.textContent = fullContent
+                            scrollToBottom()
+
                             hideTypingIndicator()
                             sendBtn.disabled = false
 
