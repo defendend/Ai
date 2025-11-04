@@ -31,6 +31,7 @@ class ChatUI {
     private var currentChatId: Int? = null
     private var currentMessages = mutableListOf<LocalMessage>()
     private var currentProvider: String = "deepseek"
+    private var isSending: Boolean = false
 
     // DOM elements
     private val messagesContainer: HTMLDivElement
@@ -409,6 +410,12 @@ class ChatUI {
     }
 
     private fun handleSendMessage() {
+        // Prevent double-sending
+        if (isSending) {
+            console.log("Already sending a message, ignoring duplicate request")
+            return
+        }
+
         val content = messageInput.value.trim()
         if (content.isEmpty()) return
 
@@ -432,6 +439,7 @@ class ChatUI {
 
         messageInput.value = ""
         sendBtn.disabled = true
+        isSending = true
 
         scope.launch {
             try {
@@ -447,52 +455,60 @@ class ChatUI {
                     var displayedContent = ""
                     var updateIntervalId: Int? = null
 
-                    // Start interval to update UI every 50ms
-                    updateIntervalId = window.setInterval({
-                        if (displayedContent != fullContent) {
-                            displayedContent = fullContent
-                            contentDiv?.textContent = fullContent
-                            console.log("Updated contentDiv, fullContent length:", fullContent.length)
-                            scrollToBottom()
-                        }
-                    }, 50)
-
-                    apiClient.sendMessageStreaming(
-                        chatId = chatId,
-                        content = content,
-                        onChunk = { chunk ->
-                            console.log("Received chunk:", chunk)
-                            fullContent += chunk
-                            assistantMessage.content = fullContent
-                            // Content will be displayed by interval
-                        },
-                        onComplete = {
-                            // Stop the update interval
-                            updateIntervalId?.let { window.clearInterval(it) }
-
-                            // Final update to ensure all text is shown
-                            contentDiv?.textContent = fullContent
-                            scrollToBottom()
-
-                            hideTypingIndicator()
-                            sendBtn.disabled = false
-
-                            // Update chat title from first message
-                            if (currentMessages.size <= 2) {
-                                updateChatTitle(chatId, content.take(30))
+                    try {
+                        // Start interval to update UI every 50ms
+                        updateIntervalId = window.setInterval({
+                            if (displayedContent != fullContent) {
+                                displayedContent = fullContent
+                                contentDiv?.textContent = fullContent
+                                console.log("Updated contentDiv, fullContent length:", fullContent.length)
+                                scrollToBottom()
                             }
-                        },
-                        onError = { error ->
-                            // Stop the update interval
-                            updateIntervalId?.let { window.clearInterval(it) }
+                        }, 50)
 
-                            hideTypingIndicator()
-                            sendBtn.disabled = false
+                        apiClient.sendMessageStreaming(
+                            chatId = chatId,
+                            content = content,
+                            onChunk = { chunk ->
+                                console.log("Received chunk:", chunk)
+                                fullContent += chunk
+                                assistantMessage.content = fullContent
+                                // Content will be displayed by interval
+                            },
+                            onComplete = {
+                                // Stop the update interval
+                                updateIntervalId?.let { window.clearInterval(it) }
 
-                            contentDiv?.textContent = Localization.t("error.tryAgain")
-                            console.error("Streaming error:", error)
-                        }
-                    )
+                                // Final update to ensure all text is shown
+                                contentDiv?.textContent = fullContent
+                                scrollToBottom()
+
+                                hideTypingIndicator()
+                                sendBtn.disabled = false
+                                isSending = false
+
+                                // Update chat title from first message
+                                if (currentMessages.size <= 2) {
+                                    updateChatTitle(chatId, content.take(30))
+                                }
+                            },
+                            onError = { error ->
+                                // Stop the update interval
+                                updateIntervalId?.let { window.clearInterval(it) }
+
+                                hideTypingIndicator()
+                                sendBtn.disabled = false
+                                isSending = false
+
+                                contentDiv?.textContent = Localization.t("error.tryAgain")
+                                console.error("Streaming error:", error)
+                            }
+                        )
+                    } catch (e: Exception) {
+                        // Clean up interval on early error
+                        updateIntervalId?.let { window.clearInterval(it) }
+                        throw e
+                    }
                 } else {
                     // Non-streaming mode (original behavior)
                     val result = apiClient.sendMessage(chatId, content)
@@ -542,6 +558,7 @@ class ChatUI {
                     )
 
                     sendBtn.disabled = false
+                    isSending = false
                 }
             } catch (e: Exception) {
                 // Remove typing indicator
@@ -557,6 +574,7 @@ class ChatUI {
 
                 console.error("Error sending message", e)
                 sendBtn.disabled = false
+                isSending = false
             }
         }
     }

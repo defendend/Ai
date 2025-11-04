@@ -408,7 +408,8 @@ class BackendApiClient {
                 val lines = buffer.split("\n")
                 buffer = lines.last() // Keep incomplete line in buffer
 
-                for (i in 0 until lines.size - 1) {
+                var i = 0
+                while (i < lines.size - 1) {
                     val line = lines[i]
 
                     if (line.startsWith("event: message") && i + 1 < lines.size) {
@@ -420,6 +421,8 @@ class BackendApiClient {
                             onChunk(data)
                             // Yield to event loop to allow setInterval to execute
                             kotlinx.coroutines.delay(0)
+                            i += 2  // Skip both event and data lines
+                            continue
                         }
                     } else if (line.startsWith("event: done")) {
                         console.log("[SSE] Stream done")
@@ -434,6 +437,7 @@ class BackendApiClient {
                             return
                         }
                     }
+                    i++
                 }
             }
 
