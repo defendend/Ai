@@ -349,35 +349,44 @@ fun Route.chatRoutes() {
                     streaming = true
                 )
 
-                // Set SSE headers
-                call.response.header(HttpHeaders.ContentType, "text/event-stream")
+                // Set SSE headers before responding
                 call.response.header(HttpHeaders.CacheControl, "no-cache")
-                call.response.header(HttpHeaders.Connection, "keep-alive")
+                call.response.header("X-Accel-Buffering", "no")
 
                 // Collect all chunks to save as complete message
                 val fullResponse = StringBuilder()
 
                 // Stream the response
                 call.respondTextWriter(contentType = ContentType.Text.EventStream) {
-                    AIService.sendMessageStreaming(provider, allMessages, parameters)
-                        .catch { e ->
-                            // Send error event
-                            write("event: error\n")
-                            write("data: ${e.message}\n\n")
-                            flush()
-                        }
-                        .collect { chunk ->
-                            fullResponse.append(chunk)
-                            // Send text chunk as SSE
-                            write("event: message\n")
-                            write("data: $chunk\n\n")
-                            flush()
-                        }
+                    try {
+                        AIService.sendMessageStreaming(provider, allMessages, parameters)
+                            .catch { e ->
+                                println("Error in streaming flow: ${e.message}")
+                                e.printStackTrace()
+                                // Send error event
+                                write("event: error\n")
+                                write("data: ${e.message}\n\n")
+                                flush()
+                            }
+                            .collect { chunk ->
+                                fullResponse.append(chunk)
+                                // Send text chunk as SSE
+                                write("event: message\n")
+                                write("data: $chunk\n\n")
+                                flush()
+                            }
 
-                    // Send done event
-                    write("event: done\n")
-                    write("data: {\"status\":\"complete\"}\n\n")
-                    flush()
+                        // Send done event
+                        write("event: done\n")
+                        write("data: {\"status\":\"complete\"}\n\n")
+                        flush()
+                    } catch (e: Exception) {
+                        println("Exception in streaming writer: ${e.message}")
+                        e.printStackTrace()
+                        write("event: error\n")
+                        write("data: ${e.message ?: "Unknown error"}\n\n")
+                        flush()
+                    }
                 }
 
                 // Save AI response to database after streaming is complete
