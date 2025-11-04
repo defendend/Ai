@@ -13,6 +13,7 @@ import io.ktor.utils.io.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
@@ -236,13 +237,16 @@ object AIService {
                         val jsonElement = Json.parseToJsonElement(jsonData)
                         val obj = jsonElement.jsonObject
 
-                        // Extract content from delta
-                        val choices = obj["choices"]?.jsonObject
-                        val delta = choices?.get("delta")?.jsonObject
-                        val content = delta?.get("content")?.jsonPrimitive?.content
+                        // Extract content from delta - choices is an array
+                        val choices = obj["choices"]?.jsonArray
+                        if (choices != null && choices.isNotEmpty()) {
+                            val firstChoice = choices[0].jsonObject
+                            val delta = firstChoice["delta"]?.jsonObject
+                            val content = delta?.get("content")?.jsonPrimitive?.content
 
-                        if (content != null) {
-                            emit(content)
+                            if (content != null) {
+                                emit(content)
+                            }
                         }
                     } catch (e: Exception) {
                         // Skip malformed JSON
