@@ -797,10 +797,14 @@ body.login-page {
 
 .tooltip-icon {
     cursor: help;
-    font-size: 16px;
+    font-size: 14px;
     opacity: 0.6;
     transition: opacity 0.2s;
     position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
 }
 
 .tooltip-icon:hover {
