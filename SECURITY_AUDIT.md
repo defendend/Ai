@@ -1,8 +1,13 @@
 # Security Audit Report
 
+**Last Updated:** 2025-11-05
+**Status:** 11 из 15 уязвимостей исправлено ✅
+
+---
+
 ## 🔴 КРИТИЧЕСКИЕ уязвимости (исправить немедленно!)
 
-### 1. SQL Injection в ChatRoutes.kt
+### 1. SQL Injection в ChatRoutes.kt ✅ ИСПРАВЛЕНО
 **Риск:** Критический
 **Местоположение:** `src/jvmMain/kotlin/app/routes/ChatRoutes.kt:214-217`
 
@@ -23,7 +28,7 @@ Chats.deleteWhere { (Chats.id eq chatIdParam) and (Chats.userId eq userId) }
 
 ---
 
-### 2. CORS anyHost() открывает доступ с любого домена
+### 2. CORS anyHost() открывает доступ с любого домена ✅ ИСПРАВЛЕНО
 **Риск:** Критический
 **Местоположение:** `src/jvmMain/kotlin/app/Application.kt:96`
 
@@ -49,7 +54,7 @@ if (developmentMode) {
 
 ## 🟠 ВЫСОКИЙ риск
 
-### 3. JWT использует слабый дефолтный секрет
+### 3. JWT использует слабый дефолтный секрет ✅ ИСПРАВЛЕНО
 **Местоположение:** `src/jvmMain/kotlin/app/routes/AuthRoutes.kt:112`, `Application.kt:100`
 
 ```kotlin
@@ -68,7 +73,7 @@ val secret = System.getenv("JWT_SECRET")
 
 ---
 
-### 4. Отсутствие Rate Limiting
+### 4. Отсутствие Rate Limiting ✅ ИСПРАВЛЕНО
 **Риск:** Высокий (DoS, брутфорс)
 
 **Проблема:** Нет ограничения на:
@@ -76,25 +81,31 @@ val secret = System.getenv("JWT_SECRET")
 - Регистрацию аккаунтов (спам)
 - API запросы (DoS)
 
-**Решение:** Добавить Ktor Rate Limiting plugin или использовать Redis для rate limiting.
+**Решение:** ✅ Реализовано
+- Login: 5 попыток за 15 минут на IP
+- Registration: 3 попытки за час на IP
+- Sliding window алгоритм
+- Thread-safe implementation
+- Автоматический cleanup каждые 5 минут
 
 ---
 
-### 5. Нет защиты от CSRF
+### 5. Нет защиты от CSRF ✅ ИСПРАВЛЕНО
 **Риск:** Высокий
 
-**Проблема:** API принимает запросы без CSRF токенов.
+**Проблема:** API принимал запросы без CSRF токенов.
 
-**Решение:**
-- Для API с JWT - проверять Origin/Referer headers
-- Использовать SameSite cookie для session-based auth
-- Добавить CSRF токены
+**Решение:** ✅ Реализовано
+- Проверка Origin header для всех POST/PUT/PATCH/DELETE
+- Fallback на Referer header
+- Whitelist разрешенных доменов
+- Development mode для локальной разработки
 
 ---
 
 ## 🟡 СРЕДНИЙ риск
 
-### 6. Отсутствуют Security Headers
+### 6. Отсутствуют Security Headers ✅ ИСПРАВЛЕНО
 **Местоположение:** `src/jvmMain/kotlin/app/Application.kt`
 
 **Отсутствующие заголовки:**
@@ -108,7 +119,7 @@ val secret = System.getenv("JWT_SECRET")
 
 ---
 
-### 7. Пароли хешируются без salt rounds config
+### 7. Пароли хешируются без salt rounds config ✅ ИСПРАВЛЕНО
 **Местоположение:** `src/jvmMain/kotlin/app/routes/AuthRoutes.kt`
 
 ```kotlin
@@ -124,7 +135,7 @@ BCrypt.hashpw(request.password, BCrypt.gensalt(12))
 
 ---
 
-### 8. Логирование может содержать чувствительные данные
+### 8. Логирование может содержать чувствительные данные ✅ ИСПРАВЛЕНО
 **Местоположение:** `src/jvmMain/kotlin/app/Application.kt:64-71`
 
 **Проблема:** Sanitization только для `password` и `token`, но не для:
@@ -134,7 +145,7 @@ BCrypt.hashpw(request.password, BCrypt.gensalt(12))
 
 ---
 
-### 9. Нет валидации email формата при регистрации
+### 9. Нет валидации email формата при регистрации ✅ ИСПРАВЛЕНО
 **Местоположение:** `src/jvmMain/kotlin/app/routes/AuthRoutes.kt`
 
 ```kotlin
@@ -183,7 +194,7 @@ val isAdminUser = (request.email == "alexseera@yandex.ru")
 
 ---
 
-### 14. User enumeration через разные error messages
+### 14. User enumeration через разные error messages ✅ ИСПРАВЛЕНО
 **Местоположение:** `src/jvmMain/kotlin/app/routes/AuthRoutes.kt`
 
 При регистрации:
@@ -193,7 +204,7 @@ val isAdminUser = (request.email == "alexseera@yandex.ru")
 
 ---
 
-### 15. Нет input sanitization для HTML/XSS
+### 15. Нет input sanitization для HTML/XSS ✅ ИСПРАВЛЕНО
 **Риск:** Низкий (т.к. используется JSON API, но frontend может быть уязвим)
 
 **Проблема:** Backend не санитизирует HTML в:
@@ -205,23 +216,29 @@ val isAdminUser = (request.email == "alexseera@yandex.ru")
 
 ---
 
-## Приоритет исправлений:
+## ✅ ИСПРАВЛЕНО (11/15):
 
-### Сделать прямо сейчас:
-1. ✅ Исправить SQL injection (КРИТИЧНО!)
-2. ✅ Исправить CORS anyHost()
-3. ✅ Обязательный JWT_SECRET
+1. ✅ SQL Injection
+2. ✅ CORS anyHost()
+3. ✅ JWT mandatory secret
+4. ✅ **Rate Limiting** (NEW!)
+5. ✅ **CSRF Protection** (NEW!)
+6. ✅ Security Headers
+7. ✅ BCrypt 12 rounds
+8. ✅ PII logging sanitization
+9. ✅ Email validation
+10. ✅ User enumeration prevention
+11. ✅ XSS input sanitization
 
-### На этой неделе:
-4. Rate Limiting
-5. Security Headers
-6. CSRF защита
+## ⚠️ ОСТАЕТСЯ (4/15):
 
-### В следующем спринте:
-7. Refresh tokens
-8. Security audit logging
-9. Email validation
-10. Input sanitization
+### 🟡 Средний риск:
+12. Hardcoded admin email (нужно в env variable)
+13. No security audit logging
+
+### 🟢 Низкий риск (best practices):
+14. JWT токены без refresh mechanism
+15. No dependabot / automated security scanning
 
 ---
 
