@@ -124,6 +124,10 @@ fun Route.chatRoutes() {
                         it[topP] = request.topP
                         it[systemPrompt] = request.systemPrompt
                         request.streaming?.let { streamingValue -> it[streaming] = streamingValue }
+
+                        // Response format settings
+                        request.responseFormat?.let { format -> it[responseFormat] = format }
+                        it[responseSchema] = request.responseSchema
                     } > 0
                 }
 
@@ -263,7 +267,9 @@ fun Route.chatRoutes() {
                     temperature = chat[Chats.temperature],
                     maxTokens = chat[Chats.maxTokens],
                     topP = chat[Chats.topP],
-                    systemPrompt = chat[Chats.systemPrompt]
+                    systemPrompt = chat[Chats.systemPrompt],
+                    responseFormat = chat[Chats.responseFormat],
+                    responseSchema = chat[Chats.responseSchema]
                 )
                 val aiResponse = AIService.sendMessage(provider, allMessages, parameters)
 
@@ -346,7 +352,9 @@ fun Route.chatRoutes() {
                     maxTokens = chat[Chats.maxTokens],
                     topP = chat[Chats.topP],
                     systemPrompt = chat[Chats.systemPrompt],
-                    streaming = true
+                    streaming = true,
+                    responseFormat = chat[Chats.responseFormat],
+                    responseSchema = chat[Chats.responseSchema]
                 )
 
                 // Set SSE headers before responding

@@ -58,6 +58,11 @@ data class Chat(
 
 // DeepSeek / OpenAI compatible models
 @Serializable
+data class ResponseFormat(
+    val type: String // "json_object" or "text"
+)
+
+@Serializable
 data class DeepSeekRequest(
     val model: String,
     val messages: List<Message>,
@@ -66,7 +71,9 @@ data class DeepSeekRequest(
     val temperature: Double? = null,
     @SerialName("top_p")
     val topP: Double? = null,
-    val stream: Boolean = false
+    val stream: Boolean = false,
+    @SerialName("response_format")
+    val responseFormat: ResponseFormat? = null
 )
 
 @Serializable

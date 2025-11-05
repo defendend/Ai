@@ -14,8 +14,8 @@ object DatabaseFactory {
         val database = Database.connect(createHikariDataSource())
 
         transaction(database) {
-            // Create tables
-            SchemaUtils.create(Users, Chats, Messages)
+            // Create tables and add missing columns
+            SchemaUtils.createMissingTablesAndColumns(Users, Chats, Messages)
         }
     }
 

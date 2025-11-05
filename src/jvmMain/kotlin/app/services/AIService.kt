@@ -44,7 +44,9 @@ object AIService {
         val maxTokens: Int? = null,
         val topP: Double? = null,
         val systemPrompt: String? = null,
-        val streaming: Boolean = false
+        val streaming: Boolean = false,
+        val responseFormat: String = "none",
+        val responseSchema: String? = null
     )
 
     suspend fun sendMessage(
@@ -98,12 +100,20 @@ object AIService {
         val apiKey = System.getenv("DEEPSEEK_API_KEY")
             ?: throw IllegalStateException("DEEPSEEK_API_KEY environment variable is not set")
 
+        // Build system prompt with format instructions
+        val systemPrompt = buildSystemPromptWithFormat(parameters.systemPrompt, parameters.responseFormat, parameters.responseSchema)
+
         // Add system prompt as first message if provided
-        val messagesWithSystem = if (parameters.systemPrompt != null) {
-            listOf(Message(role = "system", content = parameters.systemPrompt)) + messages
+        val messagesWithSystem = if (systemPrompt != null) {
+            listOf(Message(role = "system", content = systemPrompt)) + messages
         } else {
             messages
         }
+
+        // Set response format for JSON
+        val responseFormat = if (parameters.responseFormat == "json") {
+            ResponseFormat(type = "json_object")
+        } else null
 
         val request = DeepSeekRequest(
             model = "deepseek-chat",
@@ -111,7 +121,8 @@ object AIService {
             maxTokens = parameters.maxTokens,
             temperature = parameters.temperature ?: 0.7,
             topP = parameters.topP,
-            stream = parameters.streaming
+            stream = parameters.streaming,
+            responseFormat = responseFormat
         )
 
         try {
@@ -220,12 +231,20 @@ object AIService {
         val apiKey = System.getenv("DEEPSEEK_API_KEY")
             ?: throw IllegalStateException("DEEPSEEK_API_KEY environment variable is not set")
 
+        // Build system prompt with format instructions
+        val systemPrompt = buildSystemPromptWithFormat(parameters.systemPrompt, parameters.responseFormat, parameters.responseSchema)
+
         // Add system prompt as first message if provided
-        val messagesWithSystem = if (parameters.systemPrompt != null) {
-            listOf(Message(role = "system", content = parameters.systemPrompt)) + messages
+        val messagesWithSystem = if (systemPrompt != null) {
+            listOf(Message(role = "system", content = systemPrompt)) + messages
         } else {
             messages
         }
+
+        // Set response format for JSON
+        val responseFormat = if (parameters.responseFormat == "json") {
+            ResponseFormat(type = "json_object")
+        } else null
 
         val request = DeepSeekRequest(
             model = "deepseek-chat",
@@ -233,7 +252,8 @@ object AIService {
             maxTokens = parameters.maxTokens,
             temperature = parameters.temperature ?: 0.7,
             topP = parameters.topP,
-            stream = true
+            stream = true,
+            responseFormat = responseFormat
         )
 
         try {
@@ -286,6 +306,45 @@ object AIService {
             }
         } catch (e: Exception) {
             throw Exception("Failed to call DeepSeek streaming API: ${e.message}", e)
+        }
+    }
+
+    /**
+     * Builds system prompt with format instructions
+     */
+    private fun buildSystemPromptWithFormat(
+        basePrompt: String?,
+        format: String,
+        schema: String?
+    ): String? {
+        if (format == "none") {
+            return basePrompt
+        }
+
+        val formatInstructions = when (format) {
+            "json" -> {
+                val schemaText = if (schema != null) {
+                    "\n\nYou must respond with JSON that matches this exact schema:\n$schema"
+                } else {
+                    "\n\nYou must respond with valid JSON only."
+                }
+                "IMPORTANT: Your response must be in JSON format.$schemaText\nDo not include any text outside the JSON structure."
+            }
+            "xml" -> {
+                val schemaText = if (schema != null) {
+                    "\n\nYou must respond with XML that matches this exact schema:\n$schema"
+                } else {
+                    "\n\nYou must respond with valid XML only."
+                }
+                "IMPORTANT: Your response must be in XML format.$schemaText\nDo not include any text outside the XML structure."
+            }
+            else -> return basePrompt
+        }
+
+        return if (basePrompt != null) {
+            "$basePrompt\n\n$formatInstructions"
+        } else {
+            formatInstructions
         }
     }
 }

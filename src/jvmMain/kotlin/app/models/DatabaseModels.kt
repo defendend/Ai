@@ -26,6 +26,10 @@ object Chats : IntIdTable("chats") {
     val topP = double("top_p").nullable().default(null)
     val systemPrompt = text("system_prompt").nullable().default(null)
     val streaming = bool("streaming").default(true) // Enable streaming by default
+
+    // Response format settings
+    val responseFormat = varchar("response_format", 10).default("none") // "none", "json", "xml"
+    val responseSchema = text("response_schema").nullable().default(null) // JSON/XML schema
 }
 
 object Messages : IntIdTable("messages") {
@@ -55,7 +59,9 @@ data class ChatDTO(
     val maxTokens: Int? = null,
     val topP: Double? = null,
     val systemPrompt: String? = null,
-    val streaming: Boolean = true
+    val streaming: Boolean = true,
+    val responseFormat: String = "none",
+    val responseSchema: String? = null
 )
 
 @Serializable
@@ -105,7 +111,9 @@ data class UpdateChatRequest(
     val maxTokens: Int? = null,
     val topP: Double? = null,
     val systemPrompt: String? = null,
-    val streaming: Boolean? = null
+    val streaming: Boolean? = null,
+    val responseFormat: String? = null,
+    val responseSchema: String? = null
 )
 
 @Serializable
@@ -136,7 +144,9 @@ fun ResultRow.toChatDTO(messageCount: Int = 0, lastMessage: String? = null) = Ch
     maxTokens = this[Chats.maxTokens],
     topP = this[Chats.topP],
     systemPrompt = this[Chats.systemPrompt],
-    streaming = this[Chats.streaming]
+    streaming = this[Chats.streaming],
+    responseFormat = this[Chats.responseFormat],
+    responseSchema = this[Chats.responseSchema]
 )
 
 fun ResultRow.toMessageDTO() = MessageDTO(
