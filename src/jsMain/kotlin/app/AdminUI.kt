@@ -50,9 +50,18 @@ class AdminUI {
     init {
         // Check authentication
         val token = localStorage["jwt_token"]
+        val currentUserEmail = localStorage["user_email"]
+
         if (token == null) {
             window.location.href = "/"
             throw RuntimeException("Not authenticated, redirecting...")
+        }
+
+        // Check if user is admin
+        if (currentUserEmail != "alexseera@yandex.ru") {
+            console.error("Access denied: User is not admin")
+            window.location.href = "/chats"
+            throw RuntimeException("Access denied, redirecting to chats...")
         }
 
         // Get DOM elements
@@ -136,8 +145,17 @@ class AdminUI {
                         renderUsers()
                     },
                     onFailure = { error ->
-                        showError("Failed to load users: ${error.message}")
                         console.error("Failed to load users", error)
+
+                        // Check if it's an authorization error
+                        if (error.message?.contains("403") == true || error.message?.contains("Forbidden") == true) {
+                            showError("Access denied: You don't have admin privileges")
+                            window.setTimeout({
+                                window.location.href = "/chats"
+                            }, 2000)
+                        } else {
+                            showError("Failed to load users: ${error.message}")
+                        }
                     }
                 )
             } catch (e: Exception) {
