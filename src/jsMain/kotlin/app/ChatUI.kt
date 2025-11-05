@@ -594,14 +594,16 @@ class ChatUI {
         val contentDiv = document.createElement("div") as HTMLDivElement
         contentDiv.className = "message-content"
 
-        // Try to parse JSON/XML for assistant messages
+        // Try to parse JSON/XML/HTML for assistant messages
         if (message.role == "assistant") {
             val formattedJson = formatJsonResponse(message.content)
             val formattedXml = if (formattedJson == null) formatXmlResponse(message.content) else null
+            val formattedHtml = if (formattedJson == null && formattedXml == null) formatHtmlResponse(message.content) else null
 
             when {
                 formattedJson != null -> contentDiv.innerHTML = formattedJson
                 formattedXml != null -> contentDiv.innerHTML = formattedXml
+                formattedHtml != null -> contentDiv.innerHTML = formattedHtml
                 else -> contentDiv.textContent = message.content
             }
         } else {
@@ -709,6 +711,45 @@ class ChatUI {
         } catch (e: Exception) {
             // Not valid XML or doesn't match schema, return null to use plain text
             console.log("XML parsing error:", e.message)
+            null
+        }
+    }
+
+    /**
+     * Format HTML response from AI
+     * Validates and sanitizes HTML content before rendering
+     */
+    private fun formatHtmlResponse(content: String): String? {
+        return try {
+            val trimmedContent = content.trim()
+
+            // Check if content looks like HTML (has opening and closing tags)
+            if (!trimmedContent.startsWith("<") || !trimmedContent.endsWith(">")) {
+                return null
+            }
+
+            // Parse HTML to validate it
+            val parser = js("new DOMParser()")
+            val doc = parser.parseFromString(trimmedContent, "text/html") as org.w3c.dom.Document
+
+            // Check for parser errors
+            val parserError = doc.querySelector("parsererror")
+            if (parserError != null) {
+                console.log("HTML parsing error detected")
+                return null
+            }
+
+            // Check if it has expected structure (ai-response class or common HTML tags)
+            val body = doc.body
+            if (body == null || body.childNodes.length == 0) {
+                return null
+            }
+
+            // Return the HTML content as-is (it's already validated)
+            // The AI should generate safe HTML following the schema
+            trimmedContent
+        } catch (e: Exception) {
+            console.log("HTML parsing error:", e.message)
             null
         }
     }

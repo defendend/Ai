@@ -441,6 +441,27 @@ object AIService {
                     }
                     "IMPORTANT: Your response must be in XML format.$schemaText\nDo not include any text outside the XML structure."
                 }
+                "html" -> {
+                    val defaultHtmlSchema = """
+<div class="ai-response">
+  <h3 class="response-title">краткий заголовок ответа</h3>
+  <div class="response-content">
+    <p>основной текст ответа</p>
+  </div>
+  <div class="response-metadata">
+    <span class="confidence">высокая|средняя|низкая</span>
+    <span class="category">информация|инструкция|объяснение|совет|код|другое</span>
+  </div>
+</div>
+                    """.trim()
+
+                    val schemaText = if (schema != null) {
+                        "\n\nYou must respond with HTML that matches this exact structure:\n$schema"
+                    } else {
+                        "\n\nYou must respond with HTML that matches this exact structure:\n$defaultHtmlSchema"
+                    }
+                    "IMPORTANT: Your response must be in HTML format.$schemaText\nUse semantic HTML tags and appropriate CSS classes. Do not include <!DOCTYPE>, <html>, <head>, or <body> tags - only the content fragment."
+                }
                 else -> null
             }
             if (structuredInstructions != null) instructions.add(structuredInstructions)

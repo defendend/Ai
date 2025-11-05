@@ -908,3 +908,59 @@ body.login-page {
 .tooltip-icon:hover::before {
     opacity: 1;
 }
+
+/* HTML Response Format Styles */
+.ai-response {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.ai-response .response-title,
+.ai-response h3.response-title {
+    font-size: 1.1em;
+    font-weight: 600;
+    margin: 0 0 8px 0;
+    color: #333;
+}
+
+.ai-response .response-content {
+    line-height: 1.6;
+    color: #444;
+}
+
+.ai-response .response-content p {
+    margin: 0 0 8px 0;
+}
+
+.ai-response .response-content p:last-child {
+    margin-bottom: 0;
+}
+
+.ai-response .response-metadata {
+    display: flex;
+    gap: 12px;
+    font-size: 0.85em;
+    color: #888;
+    margin-top: 8px;
+}
+
+.ai-response .response-metadata .confidence {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ai-response .response-metadata .confidence::before {
+    content: '✓';
+}
+
+.ai-response .response-metadata .category {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ai-response .response-metadata .category::before {
+    content: '📁';
+}
