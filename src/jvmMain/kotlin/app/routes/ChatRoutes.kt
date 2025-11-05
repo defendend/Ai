@@ -3,6 +3,7 @@ package app.routes
 import app.database.DatabaseFactory.dbQuery
 import app.models.*
 import app.services.AIService
+import app.utils.SecurityUtils
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -111,10 +112,13 @@ fun Route.chatRoutes() {
                 }
 
             try {
+                // Sanitize input to prevent XSS
+                val sanitizedTitle = SecurityUtils.sanitizeChatTitle(request.title)
+
                 val chatId = dbQuery {
                     Chats.insert {
                         it[Chats.userId] = userId
-                        it[title] = request.title
+                        it[title] = sanitizedTitle
                         it[provider] = request.provider
                     }[Chats.id].value
                 }
@@ -152,19 +156,23 @@ fun Route.chatRoutes() {
             // No validation needed - at least one field is implicitly provided
 
             try {
+                // Sanitize input to prevent XSS
+                val sanitizedTitle = request.title?.let { SecurityUtils.sanitizeChatTitle(it) }
+                val sanitizedSystemPrompt = SecurityUtils.sanitizeSystemPrompt(request.systemPrompt)
+
                 val updated = dbQuery {
                     val existing = Chats.select { (Chats.id eq chatId) and (Chats.userId eq userId) }.singleOrNull()
                     if (existing == null) return@dbQuery false
 
                     Chats.update({ (Chats.id eq chatId) and (Chats.userId eq userId) }) {
                         request.provider?.let { newProvider -> it[provider] = newProvider }
-                        request.title?.let { newTitle -> it[title] = newTitle }
+                        sanitizedTitle?.let { newTitle -> it[title] = newTitle }
 
                         // For AI parameters, always update even if null (to reset to default)
                         it[temperature] = request.temperature
                         it[maxTokens] = request.maxTokens
                         it[topP] = request.topP
-                        it[systemPrompt] = request.systemPrompt
+                        it[systemPrompt] = sanitizedSystemPrompt
                         request.streaming?.let { streamingValue -> it[streaming] = streamingValue }
 
                         // Response format settings
@@ -296,6 +304,9 @@ fun Route.chatRoutes() {
                     return@post
                 }
 
+                // Sanitize message content to prevent XSS
+                val sanitizedContent = SecurityUtils.sanitizeMessageContent(request.content)
+
                 // Get chat info and verify ownership
                 val chat = dbQuery {
                     Chats.select { (Chats.id eq chatId) and (Chats.userId eq userId) }.singleOrNull()
@@ -311,7 +322,7 @@ fun Route.chatRoutes() {
                     Messages.insert {
                         it[Messages.chatId] = chatId
                         it[role] = "user"
-                        it[content] = request.content
+                        it[content] = sanitizedContent
                     }[Messages.id].value
                 }
 
@@ -392,6 +403,9 @@ fun Route.chatRoutes() {
                     return@post
                 }
 
+                // Sanitize message content to prevent XSS
+                val sanitizedContent = SecurityUtils.sanitizeMessageContent(request.content)
+
                 // Get chat info and verify ownership
                 val chat = dbQuery {
                     Chats.select { (Chats.id eq chatId) and (Chats.userId eq userId) }.singleOrNull()
@@ -407,7 +421,7 @@ fun Route.chatRoutes() {
                     Messages.insert {
                         it[Messages.chatId] = chatId
                         it[role] = "user"
-                        it[content] = request.content
+                        it[content] = sanitizedContent
                     }[Messages.id].value
                 }
 

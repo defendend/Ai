@@ -135,7 +135,8 @@ fun Route.adminRoutes() {
                     }
 
                     if (userId == null) {
-                        call.respond(HttpStatusCode.Conflict, ErrorResponse("User with this email already exists"))
+                        // Generic error to prevent user enumeration
+                        call.respond(HttpStatusCode.BadRequest, ErrorResponse("Failed to create user. Please check the details."))
                         return@post
                     }
 

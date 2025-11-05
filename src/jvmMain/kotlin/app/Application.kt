@@ -79,15 +79,23 @@ fun Application.module() {
             val userAgent = call.request.headers["User-Agent"]?.take(50) ?: "Unknown"
 
             val bodyLog = requestBody?.let { body ->
-                // Sanitize sensitive fields
+                // Sanitize sensitive fields (passwords, tokens, emails, API keys)
                 val sanitized = body
                     .replace(Regex("\"password\"\\s*:\\s*\"[^\"]*\""), "\"password\":\"***\"")
                     .replace(Regex("\"token\"\\s*:\\s*\"[^\"]*\""), "\"token\":\"***\"")
+                    .replace(Regex("\"email\"\\s*:\\s*\"[^\"]*\""), "\"email\":\"***@***.***\"")
+                    .replace(Regex("\"apiKey\"\\s*:\\s*\"[^\"]*\""), "\"apiKey\":\"***\"")
+                    .replace(Regex("sk-[a-zA-Z0-9]{32,}"), "sk-***")
                 val truncated = if (sanitized.length > 200) sanitized.take(200) + "..." else sanitized
                 " | Body: $truncated"
             } ?: ""
 
-            println("[$method] $uri$queryParams -> $status (${duration}ms)$bodyLog | UA: $userAgent")
+            // Mask IP address for privacy (keep first 2 octets for debugging)
+            val clientIP = call.request.header("X-Forwarded-For")?.split(",")?.first()?.trim()
+                ?: call.request.local.remoteHost
+            val maskedIP = clientIP.split(".").take(2).joinToString(".") + ".***"
+
+            println("[$method] $uri$queryParams -> $status (${duration}ms)$bodyLog | IP: $maskedIP | UA: $userAgent")
         }
     }
 

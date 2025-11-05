@@ -62,7 +62,8 @@ fun Route.authRoutes() {
                 }
 
                 if (userId == null) {
-                    call.respond(HttpStatusCode.Conflict, ErrorResponse("User with this email already exists"))
+                    // Generic error to prevent user enumeration
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Registration failed. Please try again or contact support."))
                     return@post
                 }
 
