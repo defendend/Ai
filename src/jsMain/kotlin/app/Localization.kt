@@ -85,6 +85,13 @@ object Localization {
             "tooltip.topP" to "Alternative way to control randomness. Value of 0.9 means AI considers only top 90% most likely words. Lower values make responses more predictable. Usually used instead of temperature.",
             "tooltip.systemPrompt" to "Special instructions that define AI behavior and role. For example: 'You are a helpful assistant that answers briefly' or 'You are an expert programmer'. Affects all responses in this chat.",
             "tooltip.streaming" to "When enabled, AI responses are displayed in real-time as they are generated, similar to ChatGPT. When disabled, you'll see the complete response at once after generation is complete.",
+            "tooltip.responseFormat" to "Force AI to respond in structured format (JSON/XML). Useful when you need machine-readable output for further processing.",
+            "tooltip.responseSchema" to "Define exact structure for JSON/XML responses. AI will follow this schema strictly. Leave empty to use default flexible schema.",
+            "tooltip.responseStyle" to "Set the tone and manner of AI responses. Professional for business, friendly for casual chat, formal for official documents, etc.",
+            "tooltip.responseLength" to "Control how verbose AI responses should be. Brief for quick answers (1-2 sentences), detailed for comprehensive explanations.",
+            "tooltip.language" to "Specify which language AI should use for responses. Auto-detect lets AI choose based on your messages.",
+            "tooltip.includeExamples" to "When enabled, AI will include relevant examples to illustrate points and make explanations clearer.",
+            "tooltip.contentFormat" to "How content should be structured: paragraphs for essays, bullets for lists, steps for instructions, etc.",
 
             // Default values display
             "default.temperature.claude" to "Default for Claude: provider-specific",
@@ -170,8 +177,15 @@ object Localization {
             "tooltip.temperature" to "Контролирует креативность и случайность ответов. Низкие значения (0-0.5) делают ответы более сфокусированными и последовательными. Высокие значения (1-2) делают ответы более креативными и разнообразными. Попробуйте 0.7 для сбалансированных ответов.",
             "tooltip.maxTokens" to "Максимальная длина ответа AI. Один токен ≈ 4 символа. Оставьте пустым для максимальной длины. Уменьшите, если нужны более короткие ответы для экономии.",
             "tooltip.topP" to "Альтернативный способ контроля случайности. Значение 0.9 означает, что AI рассматривает только топ 90% наиболее вероятных слов. Меньшие значения делают ответы более предсказуемыми. Обычно используется вместо температуры.",
-            "tooltip.systemPrompt" to "Специальные инструкции, которые определяют поведение и роль AI. Например: 'Ты полезный помощник, который отвечает кратко' или 'Ты эксперт-программист'. Влияет на все ответы в этом чате.",
+            "tooltip.systemPrompt" to "Специальные инструкции, определяющие поведение и роль AI. Например: 'Ты полезный помощник, который отвечает кратко' или 'Ты эксперт-программист'. Влияет на все ответы в этом чате.",
             "tooltip.streaming" to "При включении ответы AI отображаются в реальном времени по мере их генерации, как в ChatGPT. При отключении вы увидите полный ответ сразу после завершения генерации.",
+            "tooltip.responseFormat" to "Заставить AI отвечать в структурированном формате (JSON/XML). Полезно, когда нужен машиночитаемый вывод для дальнейшей обработки.",
+            "tooltip.responseSchema" to "Определите точную структуру для JSON/XML ответов. AI будет строго следовать этой схеме. Оставьте пустым для использования гибкой схемы по умолчанию.",
+            "tooltip.responseStyle" to "Установите тон и манеру ответов AI. Professional для бизнеса, friendly для непринужденного общения, formal для официальных документов и т.д.",
+            "tooltip.responseLength" to "Контролируйте многословность ответов AI. Brief для быстрых ответов (1-2 предложения), detailed для подробных объяснений.",
+            "tooltip.language" to "Укажите, на каком языке AI должен отвечать. Auto-detect позволяет AI выбирать язык на основе ваших сообщений.",
+            "tooltip.includeExamples" to "При включении AI будет добавлять релевантные примеры для иллюстрации и более понятных объяснений.",
+            "tooltip.contentFormat" to "Как должен быть структурирован контент: paragraphs для эссе, bullets для списков, steps для инструкций и т.д.",
 
             // Default values display
             "default.temperature.claude" to "По умолчанию для Claude: по умолчанию провайдера",
