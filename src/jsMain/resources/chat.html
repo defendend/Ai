@@ -148,6 +148,77 @@
                             <textarea id="responseSchemaInput" class="modal-textarea" rows="6" placeholder="Enter JSON/XML schema..."></textarea>
                             <div class="setting-hint">Define the exact structure for AI responses (optional but recommended)</div>
                         </div>
+
+                        <div class="setting-item">
+                            <div class="label-with-tooltip">
+                                <label for="responseStyleSelect" class="modal-label">Response Style:</label>
+                                <span class="tooltip-icon" data-tooltip-key="responseStyle">ℹ️</span>
+                            </div>
+                            <select id="responseStyleSelect" class="modal-select">
+                                <option value="professional">Professional</option>
+                                <option value="friendly">Friendly</option>
+                                <option value="formal">Formal</option>
+                                <option value="casual">Casual</option>
+                                <option value="academic">Academic</option>
+                                <option value="creative">Creative</option>
+                            </select>
+                            <div class="setting-hint">Tone and style of AI responses</div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="label-with-tooltip">
+                                <label for="responseLengthSelect" class="modal-label">Response Length:</label>
+                                <span class="tooltip-icon" data-tooltip-key="responseLength">ℹ️</span>
+                            </div>
+                            <select id="responseLengthSelect" class="modal-select">
+                                <option value="brief">Brief (1-2 sentences)</option>
+                                <option value="concise">Concise (1 paragraph)</option>
+                                <option value="standard">Standard (2-3 paragraphs)</option>
+                                <option value="detailed">Detailed</option>
+                                <option value="comprehensive">Comprehensive</option>
+                            </select>
+                            <div class="setting-hint">How verbose responses should be</div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="label-with-tooltip">
+                                <label for="languageSelect" class="modal-label">Language:</label>
+                                <span class="tooltip-icon" data-tooltip-key="language">ℹ️</span>
+                            </div>
+                            <select id="languageSelect" class="modal-select">
+                                <option value="auto">Auto-detect</option>
+                                <option value="russian">Russian</option>
+                                <option value="english">English</option>
+                                <option value="mixed">Mixed</option>
+                            </select>
+                            <div class="setting-hint">Response language preference</div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="label-with-tooltip">
+                                <label for="contentFormatSelect" class="modal-label">Content Format:</label>
+                                <span class="tooltip-icon" data-tooltip-key="contentFormat">ℹ️</span>
+                            </div>
+                            <select id="contentFormatSelect" class="modal-select">
+                                <option value="paragraphs">Paragraphs</option>
+                                <option value="bullets">Bullet Points</option>
+                                <option value="steps">Step-by-step</option>
+                                <option value="qa">Q&A Format</option>
+                                <option value="storytelling">Storytelling</option>
+                            </select>
+                            <div class="setting-hint">How content should be structured</div>
+                        </div>
+
+                        <div class="setting-item setting-full">
+                            <div class="label-with-tooltip">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="includeExamplesCheckbox">
+                                    <span>Include Examples</span>
+                                </label>
+                                <span class="tooltip-icon" data-tooltip-key="includeExamples">ℹ️</span>
+                            </div>
+                            <div class="setting-hint">Include relevant examples to illustrate points</div>
+                        </div>
                     </div>
                     <p class="settings-hint">Leave fields empty to use default values</p>
                 </div>

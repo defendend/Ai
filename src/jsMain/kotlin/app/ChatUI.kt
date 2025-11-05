@@ -60,6 +60,11 @@ class ChatUI {
     private val responseFormatSelect: HTMLSelectElement
     private val responseSchemaInput: HTMLTextAreaElement
     private val schemaContainer: HTMLDivElement
+    private val responseStyleSelect: HTMLSelectElement
+    private val responseLengthSelect: HTMLSelectElement
+    private val languageSelect: HTMLSelectElement
+    private val includeExamplesCheckbox: HTMLInputElement
+    private val contentFormatSelect: HTMLSelectElement
     private val confirmSettingsBtn: HTMLButtonElement
     private val cancelSettingsBtn: HTMLButtonElement
 
@@ -101,6 +106,11 @@ class ChatUI {
         responseFormatSelect = document.getElementById("responseFormatSelect") as HTMLSelectElement
         responseSchemaInput = document.getElementById("responseSchemaInput") as HTMLTextAreaElement
         schemaContainer = document.getElementById("schemaContainer") as HTMLDivElement
+        responseStyleSelect = document.getElementById("responseStyleSelect") as HTMLSelectElement
+        responseLengthSelect = document.getElementById("responseLengthSelect") as HTMLSelectElement
+        languageSelect = document.getElementById("languageSelect") as HTMLSelectElement
+        includeExamplesCheckbox = document.getElementById("includeExamplesCheckbox") as HTMLInputElement
+        contentFormatSelect = document.getElementById("contentFormatSelect") as HTMLSelectElement
         confirmSettingsBtn = document.getElementById("confirmSettingsBtn") as HTMLButtonElement
         cancelSettingsBtn = document.getElementById("cancelSettingsBtn") as HTMLButtonElement
 
@@ -852,6 +862,13 @@ class ChatUI {
                         responseFormatSelect.value = chat.responseFormat
                         responseSchemaInput.value = chat.responseSchema ?: ""
 
+                        // Populate general text settings
+                        responseStyleSelect.value = chat.responseStyle
+                        responseLengthSelect.value = chat.responseLength
+                        languageSelect.value = chat.language
+                        includeExamplesCheckbox.checked = chat.includeExamples
+                        contentFormatSelect.value = chat.contentFormat
+
                         // Show/hide schema container based on format
                         schemaContainer.style.display = if (chat.responseFormat == "none") "none" else "block"
 
@@ -905,6 +922,11 @@ class ChatUI {
         val streaming = streamingCheckbox.checked
         val responseFormat = responseFormatSelect.value
         val responseSchema = responseSchemaInput.value.trim().ifEmpty { null }
+        val responseStyle = responseStyleSelect.value
+        val responseLength = responseLengthSelect.value
+        val language = languageSelect.value
+        val includeExamples = includeExamplesCheckbox.checked
+        val contentFormat = contentFormatSelect.value
 
         hideSettingsModal()
 
@@ -918,7 +940,12 @@ class ChatUI {
                     systemPrompt = systemPrompt,
                     streaming = streaming,
                     responseFormat = responseFormat,
-                    responseSchema = responseSchema
+                    responseSchema = responseSchema,
+                    responseStyle = responseStyle,
+                    responseLength = responseLength,
+                    language = language,
+                    includeExamples = includeExamples,
+                    contentFormat = contentFormat
                 )
 
                 result.fold(

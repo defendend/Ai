@@ -42,7 +42,12 @@ data class ChatResponse(
     val systemPrompt: String? = null,
     val streaming: Boolean = true,
     val responseFormat: String = "none",
-    val responseSchema: String? = null
+    val responseSchema: String? = null,
+    val responseStyle: String = "professional",
+    val responseLength: String = "standard",
+    val language: String = "auto",
+    val includeExamples: Boolean = false,
+    val contentFormat: String = "paragraphs"
 )
 
 @Serializable
@@ -284,7 +289,12 @@ class BackendApiClient {
         systemPrompt: String?,
         streaming: Boolean,
         responseFormat: String?,
-        responseSchema: String?
+        responseSchema: String?,
+        responseStyle: String?,
+        responseLength: String?,
+        language: String?,
+        includeExamples: Boolean?,
+        contentFormat: String?
     ): Result<Unit> {
         return try {
             // Always send all AI parameters to allow resetting to null
@@ -312,6 +322,27 @@ class BackendApiClient {
                 parts.add(""""responseSchema":"$escaped"""")
             } else {
                 parts.add(""""responseSchema":null""")
+            }
+
+            // General text settings
+            if (responseStyle != null) {
+                parts.add(""""responseStyle":"$responseStyle"""")
+            }
+
+            if (responseLength != null) {
+                parts.add(""""responseLength":"$responseLength"""")
+            }
+
+            if (language != null) {
+                parts.add(""""language":"$language"""")
+            }
+
+            if (includeExamples != null) {
+                parts.add(""""includeExamples":$includeExamples""")
+            }
+
+            if (contentFormat != null) {
+                parts.add(""""contentFormat":"$contentFormat"""")
             }
 
             val requestBody = "{${parts.joinToString(",")}}"
