@@ -36,15 +36,14 @@ private suspend fun checkAndIncrementRequestLimit(userId: Int): Pair<Boolean, St
         }
 
         // Check if we need to reset the counter (once per day)
-        val now = java.time.Instant.now()
-        val resetTime = lastReset.toInstant(java.time.ZoneOffset.UTC)
-        val hoursSinceReset = java.time.Duration.between(resetTime, now).toHours()
+        val now = java.time.LocalDateTime.now()
+        val hoursSinceReset = java.time.Duration.between(lastReset, now).toHours()
 
         if (hoursSinceReset >= 24) {
             // Reset the counter
             Users.update({ Users.id eq userId }) {
                 it[Users.requestCount] = 1
-                it[Users.lastRequestReset] = java.time.LocalDateTime.now()
+                it[Users.lastRequestReset] = org.jetbrains.exposed.sql.javatime.CurrentTimestamp()
             }
             return@dbQuery Pair(true, null)
         }

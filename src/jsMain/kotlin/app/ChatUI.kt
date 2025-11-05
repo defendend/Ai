@@ -124,8 +124,8 @@ class ChatUI {
     }
 
     private fun checkAdminAccess() {
-        val userEmail = localStorage["user_email"]
-        if (userEmail == "alexseera@yandex.ru") {
+        val isAdmin = localStorage["is_admin"]?.toBoolean() ?: false
+        if (isAdmin) {
             adminBtn.style.display = "inline-block"
         }
     }

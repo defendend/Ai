@@ -54,10 +54,10 @@ class AdminUI {
 
         // Check authentication
         val token = localStorage["jwt_token"]
-        val currentUserEmail = localStorage["user_email"]
+        val isAdmin = localStorage["is_admin"]?.toBoolean() ?: false
 
         console.log("AdminUI: token exists:", token != null)
-        console.log("AdminUI: user_email:", currentUserEmail)
+        console.log("AdminUI: is_admin:", isAdmin)
 
         if (token == null) {
             console.error("AdminUI: No token found, redirecting to login")
@@ -66,8 +66,8 @@ class AdminUI {
         }
 
         // Check if user is admin
-        if (currentUserEmail != "alexseera@yandex.ru") {
-            console.error("AdminUI: Access denied - User is not admin, email:", currentUserEmail)
+        if (!isAdmin) {
+            console.error("AdminUI: Access denied - User is not admin")
             window.location.href = "/chats"
             throw RuntimeException("Access denied, redirecting to chats...")
         }

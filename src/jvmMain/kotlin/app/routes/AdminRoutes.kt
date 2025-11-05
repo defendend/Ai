@@ -19,7 +19,6 @@ fun Route.requireAdmin(build: Route.() -> Unit): Route {
         intercept(ApplicationCallPipeline.Call) {
             val principal = call.principal<JWTPrincipal>()
             val userId = principal?.payload?.getClaim("userId")?.asInt()
-            val email = principal?.payload?.getClaim("email")?.asString()
 
             if (userId == null) {
                 call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Unauthorized"))
@@ -27,11 +26,18 @@ fun Route.requireAdmin(build: Route.() -> Unit): Route {
                 return@intercept
             }
 
-            // Check if user is admin
-            val isAdmin = dbQuery {
-                Users.select { Users.id eq userId }
-                    .singleOrNull()
-                    ?.get(Users.isAdmin) ?: false
+            // Try to get isAdmin from JWT claim first (for new tokens)
+            val isAdminClaim = principal.payload.getClaim("isAdmin")?.asBoolean()
+
+            // If claim doesn't exist (old tokens), check database
+            val isAdmin = if (isAdminClaim != null) {
+                isAdminClaim
+            } else {
+                dbQuery {
+                    Users.select { Users.id eq userId }
+                        .singleOrNull()
+                        ?.get(Users.isAdmin) ?: false
+                }
             }
 
             if (!isAdmin) {

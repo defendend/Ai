@@ -90,10 +90,11 @@ class LoginUI {
 
                 result.fold(
                     onSuccess = { response ->
-                        // Save JWT token
+                        // Save JWT token and user info
                         localStorage["jwt_token"] = response.token
                         localStorage["user_id"] = response.user.id.toString()
                         localStorage["user_email"] = response.user.email
+                        localStorage["is_admin"] = response.user.isAdmin.toString()
 
                         // Redirect to chats
                         window.location.href = "/chats"

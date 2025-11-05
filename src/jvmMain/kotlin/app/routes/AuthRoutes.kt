@@ -38,7 +38,7 @@ fun Route.authRoutes() {
 
                     // Insert new user
                     val isAdminUser = (request.email == "alexseera@yandex.ru")
-                    Users.insert {
+                    val newUserId = Users.insert {
                         it[email] = request.email
                         it[Users.passwordHash] = passwordHash
                         // Make alexseera@yandex.ru an admin
@@ -46,6 +46,8 @@ fun Route.authRoutes() {
                         // Admins get unlimited requests
                         it[requestLimit] = if (isAdminUser) -1 else 100
                     }[Users.id].value
+
+                    Pair(newUserId, isAdminUser)
                 }
 
                 if (userId == null) {
@@ -54,13 +56,13 @@ fun Route.authRoutes() {
                 }
 
                 // Generate JWT token
-                val token = generateToken(userId, request.email)
+                val token = generateToken(userId.first, request.email, userId.second)
 
                 call.respond(
                     HttpStatusCode.Created,
                     LoginResponse(
                         token = token,
-                        user = UserDTO(id = userId, email = request.email)
+                        user = UserDTO(id = userId.first, email = request.email, isAdmin = userId.second)
                     )
                 )
             } catch (e: Exception) {
@@ -89,7 +91,9 @@ fun Route.authRoutes() {
 
                 // Generate JWT token
                 val userId = user[Users.id].value
-                val token = generateToken(userId, user[Users.email])
+                val userEmail = user[Users.email]
+                val isAdmin = user[Users.isAdmin]
+                val token = generateToken(userId, userEmail, isAdmin)
 
                 call.respond(
                     LoginResponse(
@@ -104,7 +108,7 @@ fun Route.authRoutes() {
     }
 }
 
-private fun generateToken(userId: Int, email: String): String {
+private fun generateToken(userId: Int, email: String, isAdmin: Boolean): String {
     val secret = System.getenv("JWT_SECRET") ?: "default-secret-change-in-production"
     val issuer = "ai-chat"
     val audience = "ai-chat-users"
@@ -115,6 +119,7 @@ private fun generateToken(userId: Int, email: String): String {
         .withIssuer(issuer)
         .withClaim("userId", userId)
         .withClaim("email", email)
+        .withClaim("isAdmin", isAdmin)
         .withExpiresAt(Date(System.currentTimeMillis() + validityInMs))
         .sign(Algorithm.HMAC256(secret))
 }
