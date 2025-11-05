@@ -406,6 +406,7 @@ object AIService {
                 "json" -> {
                     val defaultJsonSchema = """
 {
+  "title": "краткий заголовок ответа",
   "content": "основной текст ответа",
   "metadata": {
     "confidence": "высокая|средняя|низкая",

@@ -620,11 +620,17 @@ class ChatUI {
             val jsonObject = jsonElement.jsonObject
 
             // Check if it has our default schema structure
+            val title = jsonObject["title"]?.jsonPrimitive?.content
             val contentField = jsonObject["content"]?.jsonPrimitive?.content
             val metadata = jsonObject["metadata"]?.jsonObject
 
             if (contentField != null) {
                 val parts = mutableListOf<String>()
+
+                // Title (if present)
+                if (!title.isNullOrBlank()) {
+                    parts.add("<div style='font-size: 1.1em; font-weight: 600; margin-bottom: 12px; color: #333;'>$title</div>")
+                }
 
                 // Main content
                 parts.add("<div style='margin-bottom: 10px;'>$contentField</div>")
