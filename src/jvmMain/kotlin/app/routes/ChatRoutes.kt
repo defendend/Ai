@@ -13,6 +13,7 @@ import io.ktor.server.routing.*
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.statements.DeleteStatement
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 
@@ -205,21 +206,26 @@ fun Route.chatRoutes() {
             }
 
             try {
-                dbQuery {
+                val deleted = dbQuery {
                     // Check if chat exists and belongs to user
                     val chatExists = Chats.select { (Chats.id eq chatIdParam) and (Chats.userId eq userId) }.count() > 0
 
                     if (chatExists) {
-                        // Delete all messages in the chat
-                        TransactionManager.current().exec("DELETE FROM messages WHERE chat_id = $chatIdParam")
+                        // Delete all messages in the chat (safe from SQL injection)
+                        Messages.deleteWhere { Messages.chatId eq chatIdParam }
 
-                        // Then delete the chat itself
-                        TransactionManager.current().exec("DELETE FROM chats WHERE id = $chatIdParam AND user_id = $userId")
-
-                        call.respond(HttpStatusCode.OK, mapOf("success" to true))
+                        // Then delete the chat itself (safe from SQL injection)
+                        Chats.deleteWhere { (Chats.id eq chatIdParam) and (Chats.userId eq userId) }
+                        true
                     } else {
-                        call.respond(HttpStatusCode.NotFound, ErrorResponse("Chat not found"))
+                        false
                     }
+                }
+
+                if (deleted) {
+                    call.respond(HttpStatusCode.OK, mapOf("success" to true))
+                } else {
+                    call.respond(HttpStatusCode.NotFound, ErrorResponse("Chat not found"))
                 }
             } catch (e: Exception) {
                 call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Failed to delete chat: ${e.message}"))

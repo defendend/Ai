@@ -34,6 +34,23 @@ fun Application.module() {
     // Enable double receive to read request body multiple times
     install(DoubleReceive)
 
+    // Configure security headers
+    intercept(ApplicationCallPipeline.Plugins) {
+        call.response.headers.append("X-Content-Type-Options", "nosniff")
+        call.response.headers.append("X-Frame-Options", "DENY")
+        call.response.headers.append("X-XSS-Protection", "1; mode=block")
+        call.response.headers.append("Referrer-Policy", "strict-origin-when-cross-origin")
+        call.response.headers.append("Permissions-Policy", "geolocation=(), microphone=(), camera=()")
+
+        // HSTS - only for HTTPS connections
+        val scheme = call.request.header("X-Forwarded-Proto") ?: "http"
+        if (scheme == "https") {
+            call.response.headers.append("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+        }
+
+        proceed()
+    }
+
     // Configure request logging
     intercept(ApplicationCallPipeline.Monitoring) {
         val startTime = System.currentTimeMillis()
@@ -92,12 +109,21 @@ fun Application.module() {
         allowHeader(HttpHeaders.Authorization)
         allowHeader(HttpHeaders.ContentType)
 
-        // Allow your frontend domain
-        anyHost() // TODO: В продакшене заменить на allowHost("defendend.dev")
+        // Allow only your frontend domain
+        allowHost("defendend.dev", schemes = listOf("https"))
+        allowHost("www.defendend.dev", schemes = listOf("https"))
+
+        // For local development
+        val isDevelopment = System.getenv("ENVIRONMENT") != "production"
+        if (isDevelopment) {
+            allowHost("localhost:8080")
+            allowHost("127.0.0.1:8080")
+        }
     }
 
     // Configure JWT Authentication
-    val jwtSecret = System.getenv("JWT_SECRET") ?: "default-secret-change-in-production"
+    val jwtSecret = System.getenv("JWT_SECRET")
+        ?: throw IllegalStateException("JWT_SECRET environment variable must be set!")
     val jwtIssuer = "ai-chat"
     val jwtAudience = "ai-chat-users"
 

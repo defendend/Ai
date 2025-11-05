@@ -14,14 +14,25 @@ import org.jetbrains.exposed.sql.select
 import org.mindrot.jbcrypt.BCrypt
 import java.util.*
 
+private fun isValidEmail(email: String): Boolean {
+    val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$".toRegex()
+    return email.matches(emailRegex)
+}
+
 fun Route.authRoutes() {
     route("/api/auth") {
         post("/register") {
             val request = call.receive<RegisterRequest>()
 
-            // Validate email and password
-            if (request.email.isBlank() || request.password.length < 6) {
-                call.respond(HttpStatusCode.BadRequest, ErrorResponse("Email and password (min 6 chars) are required"))
+            // Validate email format
+            if (!isValidEmail(request.email)) {
+                call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid email format"))
+                return@post
+            }
+
+            // Validate password strength
+            if (request.password.length < 6) {
+                call.respond(HttpStatusCode.BadRequest, ErrorResponse("Password must be at least 6 characters"))
                 return@post
             }
 
@@ -33,8 +44,8 @@ fun Route.authRoutes() {
                         return@dbQuery null
                     }
 
-                    // Hash password
-                    val passwordHash = BCrypt.hashpw(request.password, BCrypt.gensalt())
+                    // Hash password with 12 rounds for better security
+                    val passwordHash = BCrypt.hashpw(request.password, BCrypt.gensalt(12))
 
                     // Insert new user
                     val isAdminUser = (request.email == "alexseera@yandex.ru")
@@ -109,7 +120,8 @@ fun Route.authRoutes() {
 }
 
 private fun generateToken(userId: Int, email: String, isAdmin: Boolean): String {
-    val secret = System.getenv("JWT_SECRET") ?: "default-secret-change-in-production"
+    val secret = System.getenv("JWT_SECRET")
+        ?: throw IllegalStateException("JWT_SECRET environment variable must be set!")
     val issuer = "ai-chat"
     val audience = "ai-chat-users"
     val validityInMs = 36_000_00 * 24 * 7 // 7 days

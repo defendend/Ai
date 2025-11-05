@@ -13,6 +13,11 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.mindrot.jbcrypt.BCrypt
 
+private fun isValidEmail(email: String): Boolean {
+    val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$".toRegex()
+    return email.matches(emailRegex)
+}
+
 // Admin-only route protection
 fun Route.requireAdmin(build: Route.() -> Unit): Route {
     return authenticate("auth-jwt") {
@@ -97,9 +102,15 @@ fun Route.adminRoutes() {
             post("/users") {
                 val request = call.receive<CreateUserRequest>()
 
-                // Validate input
-                if (request.email.isBlank() || request.password.length < 6) {
-                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Email and password (min 6 chars) are required"))
+                // Validate email format
+                if (!isValidEmail(request.email)) {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid email format"))
+                    return@post
+                }
+
+                // Validate password strength
+                if (request.password.length < 6) {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Password must be at least 6 characters"))
                     return@post
                 }
 
@@ -111,8 +122,8 @@ fun Route.adminRoutes() {
                             return@dbQuery null
                         }
 
-                        // Hash password
-                        val passwordHash = BCrypt.hashpw(request.password, BCrypt.gensalt())
+                        // Hash password with 12 rounds for better security
+                        val passwordHash = BCrypt.hashpw(request.password, BCrypt.gensalt(12))
 
                         // Insert new user
                         Users.insert {
