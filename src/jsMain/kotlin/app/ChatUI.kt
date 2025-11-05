@@ -621,8 +621,6 @@ class ChatUI {
 
             // Check if it has our default schema structure
             val contentField = jsonObject["content"]?.jsonPrimitive?.content
-            val summary = jsonObject["summary"]?.jsonPrimitive?.content
-            val keyPoints = jsonObject["key_points"]?.jsonArray
             val metadata = jsonObject["metadata"]?.jsonObject
 
             if (contentField != null) {
@@ -630,19 +628,6 @@ class ChatUI {
 
                 // Main content
                 parts.add("<div style='margin-bottom: 10px;'>$contentField</div>")
-
-                // Summary if not empty
-                if (!summary.isNullOrBlank()) {
-                    parts.add("<div style='margin-bottom: 10px; padding: 8px; background: rgba(100,100,255,0.1); border-radius: 4px;'><strong>Резюме:</strong> $summary</div>")
-                }
-
-                // Key points
-                if (keyPoints != null && keyPoints.isNotEmpty()) {
-                    val points = keyPoints.joinToString("") {
-                        "<li>${it.jsonPrimitive.content}</li>"
-                    }
-                    parts.add("<div style='margin-bottom: 10px;'><strong>Ключевые моменты:</strong><ul style='margin: 5px 0; padding-left: 20px;'>$points</ul></div>")
-                }
 
                 // Metadata (subtle)
                 if (metadata != null) {
