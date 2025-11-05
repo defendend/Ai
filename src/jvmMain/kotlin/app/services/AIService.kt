@@ -423,10 +423,21 @@ object AIService {
                     "IMPORTANT: Your response must be in JSON format.$schemaText\nDo not include any text outside the JSON structure."
                 }
                 "xml" -> {
+                    val defaultXmlSchema = """
+<response>
+  <title>краткий заголовок ответа</title>
+  <content>основной текст ответа</content>
+  <metadata>
+    <confidence>высокая|средняя|низкая</confidence>
+    <category>информация|инструкция|объяснение|совет|код|другое</category>
+  </metadata>
+</response>
+                    """.trim()
+
                     val schemaText = if (schema != null) {
                         "\n\nYou must respond with XML that matches this exact schema:\n$schema"
                     } else {
-                        "\n\nYou must respond with valid XML only."
+                        "\n\nYou must respond with XML that matches this exact schema:\n$defaultXmlSchema"
                     }
                     "IMPORTANT: Your response must be in XML format.$schemaText\nDo not include any text outside the XML structure."
                 }

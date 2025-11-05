@@ -594,13 +594,15 @@ class ChatUI {
         val contentDiv = document.createElement("div") as HTMLDivElement
         contentDiv.className = "message-content"
 
-        // Try to parse JSON for assistant messages
+        // Try to parse JSON/XML for assistant messages
         if (message.role == "assistant") {
-            val formattedContent = formatJsonResponse(message.content)
-            if (formattedContent != null) {
-                contentDiv.innerHTML = formattedContent
-            } else {
-                contentDiv.textContent = message.content
+            val formattedJson = formatJsonResponse(message.content)
+            val formattedXml = if (formattedJson == null) formatXmlResponse(message.content) else null
+
+            when {
+                formattedJson != null -> contentDiv.innerHTML = formattedJson
+                formattedXml != null -> contentDiv.innerHTML = formattedXml
+                else -> contentDiv.textContent = message.content
             }
         } else {
             contentDiv.textContent = message.content
@@ -654,6 +656,59 @@ class ChatUI {
             }
         } catch (e: Exception) {
             // Not valid JSON or doesn't match schema, return null to use plain text
+            null
+        }
+    }
+
+    private fun formatXmlResponse(content: String): String? {
+        return try {
+            // Simple XML parsing using browser's DOMParser
+            val parser = js("new DOMParser()")
+            val xmlDoc = parser.parseFromString(content, "text/xml") as org.w3c.dom.Document
+
+            // Check for parsing errors
+            val parserError = xmlDoc.querySelector("parsererror")
+            if (parserError != null) return null
+
+            // Try to find response root element
+            val responseElem = xmlDoc.querySelector("response")
+            if (responseElem == null) return null
+
+            // Extract fields
+            val title = responseElem.querySelector("title")?.textContent
+            val contentField = responseElem.querySelector("content")?.textContent
+            val metadataElem = responseElem.querySelector("metadata")
+
+            if (contentField.isNullOrBlank()) return null
+
+            val parts = mutableListOf<String>()
+
+            // Title (if present)
+            if (!title.isNullOrBlank()) {
+                parts.add("<div style='font-size: 1.1em; font-weight: 600; margin-bottom: 12px; color: #333;'>$title</div>")
+            }
+
+            // Main content
+            parts.add("<div style='margin-bottom: 10px;'>$contentField</div>")
+
+            // Metadata (if present)
+            if (metadataElem != null) {
+                val confidence = metadataElem.querySelector("confidence")?.textContent
+                val category = metadataElem.querySelector("category")?.textContent
+
+                if (!confidence.isNullOrBlank() || !category.isNullOrBlank()) {
+                    val metaText = listOfNotNull(
+                        category?.let { "📁 $it" },
+                        confidence?.let { "✓ $it" }
+                    ).joinToString(" • ")
+                    parts.add("<div style='font-size: 0.85em; color: #888; margin-top: 8px;'>$metaText</div>")
+                }
+            }
+
+            parts.joinToString("")
+        } catch (e: Exception) {
+            // Not valid XML or doesn't match schema, return null to use plain text
+            console.log("XML parsing error:", e.message)
             null
         }
     }
