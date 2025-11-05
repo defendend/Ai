@@ -401,7 +401,7 @@ class AdminUI {
 
             scope.launch {
                 try {
-                    val result = apiClient.createUser(email, password, providers, limit)
+                    val result = apiClient.createUser(email, password, providers, limit ?: 100)
                     result.fold(
                         onSuccess = {
                             hideUserModal()
@@ -420,7 +420,7 @@ class AdminUI {
             // Update existing user
             scope.launch {
                 try {
-                    val result = apiClient.updateUser(userId, isAdmin, providers, limit)
+                    val result = apiClient.updateUser(userId, isAdmin, providers, limit ?: 100)
                     result.fold(
                         onSuccess = {
                             hideUserModal()
