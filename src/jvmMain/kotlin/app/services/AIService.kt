@@ -404,10 +404,22 @@ object AIService {
         if (format != "none") {
             val structuredInstructions = when (format) {
                 "json" -> {
+                    val defaultJsonSchema = """
+{
+  "content": "основной текст ответа",
+  "summary": "краткое резюме (опционально, может быть пустой строкой если не нужно)",
+  "key_points": ["важный пункт 1", "важный пункт 2", "..."],
+  "metadata": {
+    "confidence": "высокая|средняя|низкая",
+    "category": "информация|инструкция|объяснение|совет|код|другое"
+  }
+}
+                    """.trim()
+
                     val schemaText = if (schema != null) {
                         "\n\nYou must respond with JSON that matches this exact schema:\n$schema"
                     } else {
-                        "\n\nYou must respond with valid JSON only."
+                        "\n\nYou must respond with JSON that matches this exact schema:\n$defaultJsonSchema"
                     }
                     "IMPORTANT: Your response must be in JSON format.$schemaText\nDo not include any text outside the JSON structure."
                 }

@@ -6,6 +6,7 @@ import kotlinx.browser.window
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.*
 import org.w3c.dom.*
 import org.w3c.dom.events.KeyboardEvent
 import org.w3c.dom.get
@@ -592,13 +593,78 @@ class ChatUI {
 
         val contentDiv = document.createElement("div") as HTMLDivElement
         contentDiv.className = "message-content"
-        contentDiv.textContent = message.content
+
+        // Try to parse JSON for assistant messages
+        if (message.role == "assistant") {
+            val formattedContent = formatJsonResponse(message.content)
+            if (formattedContent != null) {
+                contentDiv.innerHTML = formattedContent
+            } else {
+                contentDiv.textContent = message.content
+            }
+        } else {
+            contentDiv.textContent = message.content
+        }
 
         messageDiv.appendChild(avatar)
         messageDiv.appendChild(contentDiv)
 
         messagesContainer.appendChild(messageDiv)
         messagesContainer.scrollTop = messagesContainer.scrollHeight.toDouble()
+    }
+
+    private fun formatJsonResponse(content: String): String? {
+        return try {
+            val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+            val jsonElement = json.parseToJsonElement(content)
+            val jsonObject = jsonElement.jsonObject
+
+            // Check if it has our default schema structure
+            val contentField = jsonObject["content"]?.jsonPrimitive?.content
+            val summary = jsonObject["summary"]?.jsonPrimitive?.content
+            val keyPoints = jsonObject["key_points"]?.jsonArray
+            val metadata = jsonObject["metadata"]?.jsonObject
+
+            if (contentField != null) {
+                val parts = mutableListOf<String>()
+
+                // Main content
+                parts.add("<div style='margin-bottom: 10px;'>$contentField</div>")
+
+                // Summary if not empty
+                if (!summary.isNullOrBlank()) {
+                    parts.add("<div style='margin-bottom: 10px; padding: 8px; background: rgba(100,100,255,0.1); border-radius: 4px;'><strong>Резюме:</strong> $summary</div>")
+                }
+
+                // Key points
+                if (keyPoints != null && keyPoints.isNotEmpty()) {
+                    val points = keyPoints.joinToString("") {
+                        "<li>${it.jsonPrimitive.content}</li>"
+                    }
+                    parts.add("<div style='margin-bottom: 10px;'><strong>Ключевые моменты:</strong><ul style='margin: 5px 0; padding-left: 20px;'>$points</ul></div>")
+                }
+
+                // Metadata (subtle)
+                if (metadata != null) {
+                    val confidence = metadata["confidence"]?.jsonPrimitive?.content
+                    val category = metadata["category"]?.jsonPrimitive?.content
+                    if (confidence != null || category != null) {
+                        val metaText = listOfNotNull(
+                            category?.let { "📁 $it" },
+                            confidence?.let { "✓ $it" }
+                        ).joinToString(" • ")
+                        parts.add("<div style='font-size: 0.85em; color: #888; margin-top: 8px;'>$metaText</div>")
+                    }
+                }
+
+                parts.joinToString("")
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            // Not valid JSON or doesn't match schema, return null to use plain text
+            null
+        }
     }
 
     private fun scrollToBottom() {
