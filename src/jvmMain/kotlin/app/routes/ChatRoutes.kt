@@ -39,8 +39,9 @@ private suspend fun checkAndIncrementRequestLimit(userId: Int): Pair<Boolean, St
         }
 
         // Check if we need to reset the counter (once per day)
-        val now = java.time.LocalDateTime.now()
-        val hoursSinceReset = java.time.Duration.between(lastReset, now).toHours()
+        val now = java.time.Instant.now()
+        val lastResetInstant = lastReset.atZone(java.time.ZoneOffset.UTC).toInstant()
+        val hoursSinceReset = java.time.Duration.between(lastResetInstant, now).toHours()
 
         if (hoursSinceReset >= 24) {
             // Reset the counter
