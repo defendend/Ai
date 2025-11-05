@@ -581,9 +581,9 @@ class BackendApiClient {
         }
     }
 
-    suspend fun updateUser(userId: Int, allowedProviders: String, requestLimit: Int): Result<AdminUser> {
+    suspend fun updateUser(userId: Int, isAdmin: Boolean, allowedProviders: String, requestLimit: Int): Result<AdminUser> {
         return try {
-            val requestBody = """{"allowedProviders":"$allowedProviders","requestLimit":$requestLimit}"""
+            val requestBody = """{"isAdmin":$isAdmin,"allowedProviders":"$allowedProviders","requestLimit":$requestLimit}"""
 
             val response = window.fetch(
                 "$baseUrl/api/admin/users/$userId",

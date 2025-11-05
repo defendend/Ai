@@ -154,6 +154,7 @@ fun Route.adminRoutes() {
 
                         // Update user
                         Users.update({ Users.id eq userId }) {
+                            request.isAdmin?.let { admin -> it[isAdmin] = admin }
                             request.allowedProviders?.let { providers -> it[allowedProviders] = providers }
                             request.requestLimit?.let { limit -> it[requestLimit] = limit }
                             request.requestCount?.let { count -> it[requestCount] = count }

@@ -32,10 +32,12 @@ class AdminUI {
     private val modalTitle: HTMLHeadingElement
     private val userEmail: HTMLInputElement
     private val userPassword: HTMLInputElement
+    private val userIsAdmin: HTMLInputElement
     private val userProviders: HTMLInputElement
     private val userLimit: HTMLInputElement
     private val saveUserBtn: HTMLButtonElement
     private val cancelUserBtn: HTMLButtonElement
+    private val adminCheckboxContainer: HTMLDivElement
     private val deleteModal: HTMLDivElement
     private val deleteUserEmail: HTMLSpanElement
     private val confirmDeleteBtn: HTMLButtonElement
@@ -61,10 +63,12 @@ class AdminUI {
         modalTitle = document.getElementById("modalTitle") as HTMLHeadingElement
         userEmail = document.getElementById("userEmail") as HTMLInputElement
         userPassword = document.getElementById("userPassword") as HTMLInputElement
+        userIsAdmin = document.getElementById("userIsAdmin") as HTMLInputElement
         userProviders = document.getElementById("userProviders") as HTMLInputElement
         userLimit = document.getElementById("userLimit") as HTMLInputElement
         saveUserBtn = document.getElementById("saveUserBtn") as HTMLButtonElement
         cancelUserBtn = document.getElementById("cancelUserBtn") as HTMLButtonElement
+        adminCheckboxContainer = document.getElementById("adminCheckboxContainer") as HTMLDivElement
         deleteModal = document.getElementById("deleteModal") as HTMLDivElement
         deleteUserEmail = document.getElementById("deleteUserEmail") as HTMLSpanElement
         confirmDeleteBtn = document.getElementById("confirmDeleteBtn") as HTMLButtonElement
@@ -246,9 +250,11 @@ class AdminUI {
         modalTitle.textContent = "Create User"
         userEmail.value = ""
         userPassword.value = ""
+        userIsAdmin.checked = false
         userProviders.value = "deepseek,claude"
         userLimit.value = "100"
         passwordContainer.style.display = "block"
+        adminCheckboxContainer.style.display = "block"
         userModal.classList.add("show")
     }
 
@@ -258,9 +264,11 @@ class AdminUI {
         userEmail.value = user.email
         userEmail.disabled = true
         userPassword.value = ""
+        userIsAdmin.checked = user.isAdmin
         userProviders.value = user.allowedProviders
         userLimit.value = user.requestLimit.toString()
         passwordContainer.style.display = "none"
+        adminCheckboxContainer.style.display = "block"
         userModal.classList.add("show")
     }
 
@@ -273,6 +281,7 @@ class AdminUI {
     private fun handleSaveUser() {
         val email = userEmail.value.trim()
         val password = userPassword.value
+        val isAdmin = userIsAdmin.checked
         val providers = userProviders.value.trim()
         val limit = userLimit.value.toIntOrNull()
 
@@ -320,7 +329,7 @@ class AdminUI {
             // Update existing user
             scope.launch {
                 try {
-                    val result = apiClient.updateUser(userId, providers, limit)
+                    val result = apiClient.updateUser(userId, isAdmin, providers, limit)
                     result.fold(
                         onSuccess = {
                             hideUserModal()

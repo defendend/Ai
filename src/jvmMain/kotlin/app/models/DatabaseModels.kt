@@ -163,6 +163,7 @@ data class CreateUserRequest(
 
 @Serializable
 data class UpdateUserRequest(
+    val isAdmin: Boolean? = null,
     val allowedProviders: String? = null,
     val requestLimit: Int? = null,
     val requestCount: Int? = null
