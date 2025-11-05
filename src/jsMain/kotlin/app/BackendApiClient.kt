@@ -40,7 +40,9 @@ data class ChatResponse(
     val maxTokens: Int? = null,
     val topP: Double? = null,
     val systemPrompt: String? = null,
-    val streaming: Boolean = true
+    val streaming: Boolean = true,
+    val responseFormat: String = "none",
+    val responseSchema: String? = null
 )
 
 @Serializable
@@ -280,7 +282,9 @@ class BackendApiClient {
         maxTokens: Int?,
         topP: Double?,
         systemPrompt: String?,
-        streaming: Boolean
+        streaming: Boolean,
+        responseFormat: String?,
+        responseSchema: String?
     ): Result<Unit> {
         return try {
             // Always send all AI parameters to allow resetting to null
@@ -298,6 +302,17 @@ class BackendApiClient {
             }
 
             parts.add(""""streaming":$streaming""")
+
+            if (responseFormat != null) {
+                parts.add(""""responseFormat":"$responseFormat"""")
+            }
+
+            if (responseSchema != null) {
+                val escaped = responseSchema.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n")
+                parts.add(""""responseSchema":"$escaped"""")
+            } else {
+                parts.add(""""responseSchema":null""")
+            }
 
             val requestBody = "{${parts.joinToString(",")}}"
 

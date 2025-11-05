@@ -57,6 +57,9 @@ class ChatUI {
     private val topPInput: HTMLInputElement
     private val systemPromptInput: HTMLTextAreaElement
     private val streamingCheckbox: HTMLInputElement
+    private val responseFormatSelect: HTMLSelectElement
+    private val responseSchemaInput: HTMLTextAreaElement
+    private val schemaContainer: HTMLDivElement
     private val confirmSettingsBtn: HTMLButtonElement
     private val cancelSettingsBtn: HTMLButtonElement
 
@@ -95,6 +98,9 @@ class ChatUI {
         topPInput = document.getElementById("topPInput") as HTMLInputElement
         systemPromptInput = document.getElementById("systemPromptInput") as HTMLTextAreaElement
         streamingCheckbox = document.getElementById("streamingCheckbox") as HTMLInputElement
+        responseFormatSelect = document.getElementById("responseFormatSelect") as HTMLSelectElement
+        responseSchemaInput = document.getElementById("responseSchemaInput") as HTMLTextAreaElement
+        schemaContainer = document.getElementById("schemaContainer") as HTMLDivElement
         confirmSettingsBtn = document.getElementById("confirmSettingsBtn") as HTMLButtonElement
         cancelSettingsBtn = document.getElementById("cancelSettingsBtn") as HTMLButtonElement
 
@@ -225,6 +231,13 @@ class ChatUI {
             if (event.target == settingsModal) {
                 hideSettingsModal()
             }
+            null
+        }
+
+        // Response format select event listener
+        responseFormatSelect.onchange = {
+            val format = responseFormatSelect.value
+            schemaContainer.style.display = if (format == "none") "none" else "block"
             null
         }
     }
@@ -836,6 +849,11 @@ class ChatUI {
                         topPInput.value = chat.topP?.toString() ?: ""
                         systemPromptInput.value = chat.systemPrompt ?: ""
                         streamingCheckbox.checked = chat.streaming
+                        responseFormatSelect.value = chat.responseFormat
+                        responseSchemaInput.value = chat.responseSchema ?: ""
+
+                        // Show/hide schema container based on format
+                        schemaContainer.style.display = if (chat.responseFormat == "none") "none" else "block"
 
                         // Update default value displays based on provider
                         val provider = chat.provider
@@ -885,6 +903,8 @@ class ChatUI {
         val topP = topPInput.value.trim().toDoubleOrNull()
         val systemPrompt = systemPromptInput.value.trim().ifEmpty { null }
         val streaming = streamingCheckbox.checked
+        val responseFormat = responseFormatSelect.value
+        val responseSchema = responseSchemaInput.value.trim().ifEmpty { null }
 
         hideSettingsModal()
 
@@ -896,7 +916,9 @@ class ChatUI {
                     maxTokens = maxTokens,
                     topP = topP,
                     systemPrompt = systemPrompt,
-                    streaming = streaming
+                    streaming = streaming,
+                    responseFormat = responseFormat,
+                    responseSchema = responseSchema
                 )
 
                 result.fold(

@@ -126,6 +126,28 @@
                             </div>
                             <div class="setting-hint">Stream responses in real-time as they are generated</div>
                         </div>
+
+                        <div class="setting-item setting-full">
+                            <div class="label-with-tooltip">
+                                <label for="responseFormatSelect" class="modal-label">Response Format:</label>
+                                <span class="tooltip-icon" data-tooltip-key="responseFormat">ℹ️</span>
+                            </div>
+                            <select id="responseFormatSelect" class="modal-select">
+                                <option value="none">None (Natural Text)</option>
+                                <option value="json">JSON</option>
+                                <option value="xml">XML</option>
+                            </select>
+                            <div class="setting-hint">Force AI to respond in a specific structured format</div>
+                        </div>
+
+                        <div class="setting-item setting-full" id="schemaContainer" style="display: none;">
+                            <div class="label-with-tooltip">
+                                <label for="responseSchemaInput" class="modal-label">Schema Definition:</label>
+                                <span class="tooltip-icon" data-tooltip-key="responseSchema">ℹ️</span>
+                            </div>
+                            <textarea id="responseSchemaInput" class="modal-textarea" rows="6" placeholder="Enter JSON/XML schema..."></textarea>
+                            <div class="setting-hint">Define the exact structure for AI responses (optional but recommended)</div>
+                        </div>
                     </div>
                     <p class="settings-hint">Leave fields empty to use default values</p>
                 </div>
