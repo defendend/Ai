@@ -21,6 +21,48 @@ private fun ApplicationCall.getUserId(): Int? {
     return principal?.payload?.getClaim("userId")?.asInt()
 }
 
+private suspend fun checkAndIncrementRequestLimit(userId: Int): Pair<Boolean, String?> {
+    return dbQuery {
+        val user = Users.select { Users.id eq userId }.singleOrNull()
+            ?: return@dbQuery Pair(false, "User not found")
+
+        val requestLimit = user[Users.requestLimit]
+        val requestCount = user[Users.requestCount]
+        val lastReset = user[Users.lastRequestReset]
+
+        // If limit is -1, requests are unlimited
+        if (requestLimit == -1) {
+            return@dbQuery Pair(true, null)
+        }
+
+        // Check if we need to reset the counter (once per day)
+        val now = java.time.Instant.now()
+        val resetTime = lastReset.toInstant(java.time.ZoneOffset.UTC)
+        val hoursSinceReset = java.time.Duration.between(resetTime, now).toHours()
+
+        if (hoursSinceReset >= 24) {
+            // Reset the counter
+            Users.update({ Users.id eq userId }) {
+                it[Users.requestCount] = 1
+                it[Users.lastRequestReset] = java.time.LocalDateTime.now()
+            }
+            return@dbQuery Pair(true, null)
+        }
+
+        // Check if limit is reached
+        if (requestCount >= requestLimit) {
+            return@dbQuery Pair(false, "Request limit exceeded. Limit: $requestLimit, Used: $requestCount")
+        }
+
+        // Increment counter
+        Users.update({ Users.id eq userId }) {
+            it[Users.requestCount] = requestCount + 1
+        }
+
+        Pair(true, null)
+    }
+}
+
 fun Route.chatRoutes() {
     authenticate("auth-jwt") {
         route("/api/chats") {
@@ -242,6 +284,13 @@ fun Route.chatRoutes() {
             }
 
             try {
+                // Check request limit
+                val (allowed, errorMessage) = checkAndIncrementRequestLimit(userId)
+                if (!allowed) {
+                    call.respond(HttpStatusCode.TooManyRequests, ErrorResponse(errorMessage ?: "Request limit exceeded"))
+                    return@post
+                }
+
                 // Get chat info and verify ownership
                 val chat = dbQuery {
                     Chats.select { (Chats.id eq chatId) and (Chats.userId eq userId) }.singleOrNull()
@@ -331,6 +380,13 @@ fun Route.chatRoutes() {
             }
 
             try {
+                // Check request limit
+                val (allowed, errorMessage) = checkAndIncrementRequestLimit(userId)
+                if (!allowed) {
+                    call.respond(HttpStatusCode.TooManyRequests, ErrorResponse(errorMessage ?: "Request limit exceeded"))
+                    return@post
+                }
+
                 // Get chat info and verify ownership
                 val chat = dbQuery {
                     Chats.select { (Chats.id eq chatId) and (Chats.userId eq userId) }.singleOrNull()

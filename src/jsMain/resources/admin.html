@@ -236,6 +236,13 @@
                         <input type="text" id="userProviders" class="modal-input" value="deepseek,claude" placeholder="deepseek,claude">
                     </div>
                     <div class="setting-item">
+                        <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="userUnlimited">
+                            <span>Unlimited Requests</span>
+                        </label>
+                        <div style="font-size: 12px; color: #666; margin-top: 4px;">Allow unlimited API requests (no daily limit)</div>
+                    </div>
+                    <div class="setting-item" id="limitContainer">
                         <label for="userLimit" class="modal-label">Request Limit:</label>
                         <input type="number" id="userLimit" class="modal-input" value="100" min="1">
                     </div>

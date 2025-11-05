@@ -34,7 +34,9 @@ class AdminUI {
     private val userPassword: HTMLInputElement
     private val userIsAdmin: HTMLInputElement
     private val userProviders: HTMLInputElement
+    private val userUnlimited: HTMLInputElement
     private val userLimit: HTMLInputElement
+    private val limitContainer: HTMLDivElement
     private val saveUserBtn: HTMLButtonElement
     private val cancelUserBtn: HTMLButtonElement
     private val adminCheckboxContainer: HTMLDivElement
@@ -92,8 +94,12 @@ class AdminUI {
                 ?: throw RuntimeException("userIsAdmin not found")
             userProviders = (document.getElementById("userProviders") as? HTMLInputElement)
                 ?: throw RuntimeException("userProviders not found")
+            userUnlimited = (document.getElementById("userUnlimited") as? HTMLInputElement)
+                ?: throw RuntimeException("userUnlimited not found")
             userLimit = (document.getElementById("userLimit") as? HTMLInputElement)
                 ?: throw RuntimeException("userLimit not found")
+            limitContainer = (document.getElementById("limitContainer") as? HTMLDivElement)
+                ?: throw RuntimeException("limitContainer not found")
             saveUserBtn = (document.getElementById("saveUserBtn") as? HTMLButtonElement)
                 ?: throw RuntimeException("saveUserBtn not found")
             cancelUserBtn = (document.getElementById("cancelUserBtn") as? HTMLButtonElement)
@@ -164,6 +170,16 @@ class AdminUI {
         deleteModal.onclick = { event ->
             if (event.target == deleteModal) {
                 hideDeleteModal()
+            }
+            null
+        }
+
+        // Toggle limit input visibility based on unlimited checkbox
+        userUnlimited.onchange = {
+            if (userUnlimited.checked) {
+                limitContainer.style.display = "none"
+            } else {
+                limitContainer.style.display = "block"
             }
             null
         }
@@ -245,12 +261,16 @@ class AdminUI {
 
             // Request Limit
             val limitCell = document.createElement("td") as HTMLTableCellElement
-            limitCell.textContent = user.requestLimit.toString()
+            limitCell.textContent = if (user.requestLimit == -1) "♾️ Unlimited" else user.requestLimit.toString()
             row.appendChild(limitCell)
 
             // Requests Used
             val usedCell = document.createElement("td") as HTMLTableCellElement
-            usedCell.textContent = "${user.requestCount} / ${user.requestLimit}"
+            usedCell.textContent = if (user.requestLimit == -1) {
+                "${user.requestCount} / ∞"
+            } else {
+                "${user.requestCount} / ${user.requestLimit}"
+            }
             row.appendChild(usedCell)
 
             // Actions
@@ -304,7 +324,9 @@ class AdminUI {
         userPassword.value = ""
         userIsAdmin.checked = false
         userProviders.value = "deepseek,claude"
+        userUnlimited.checked = false
         userLimit.value = "100"
+        limitContainer.style.display = "block"
         passwordContainer.style.display = "block"
         adminCheckboxContainer.style.display = "block"
         userModal.classList.add("show")
@@ -318,7 +340,18 @@ class AdminUI {
         userPassword.value = ""
         userIsAdmin.checked = user.isAdmin
         userProviders.value = user.allowedProviders
-        userLimit.value = user.requestLimit.toString()
+
+        // Handle unlimited requests (-1)
+        if (user.requestLimit == -1) {
+            userUnlimited.checked = true
+            userLimit.value = "100"
+            limitContainer.style.display = "none"
+        } else {
+            userUnlimited.checked = false
+            userLimit.value = user.requestLimit.toString()
+            limitContainer.style.display = "block"
+        }
+
         passwordContainer.style.display = "none"
         adminCheckboxContainer.style.display = "block"
         userModal.classList.add("show")
@@ -335,7 +368,13 @@ class AdminUI {
         val password = userPassword.value
         val isAdmin = userIsAdmin.checked
         val providers = userProviders.value.trim()
-        val limit = userLimit.value.toIntOrNull()
+
+        // If unlimited is checked, use -1, otherwise get the limit value
+        val limit = if (userUnlimited.checked) {
+            -1
+        } else {
+            userLimit.value.toIntOrNull()
+        }
 
         if (email.isBlank()) {
             showError("Email is required")
@@ -347,8 +386,8 @@ class AdminUI {
             return
         }
 
-        if (limit == null || limit < 1) {
-            showError("Request limit must be at least 1")
+        if (!userUnlimited.checked && (limit == null || limit < 1)) {
+            showError("Request limit must be at least 1 or enable unlimited")
             return
         }
 

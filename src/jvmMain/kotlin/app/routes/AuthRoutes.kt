@@ -37,11 +37,14 @@ fun Route.authRoutes() {
                     val passwordHash = BCrypt.hashpw(request.password, BCrypt.gensalt())
 
                     // Insert new user
+                    val isAdminUser = (request.email == "alexseera@yandex.ru")
                     Users.insert {
                         it[email] = request.email
                         it[Users.passwordHash] = passwordHash
                         // Make alexseera@yandex.ru an admin
-                        it[isAdmin] = (request.email == "alexseera@yandex.ru")
+                        it[isAdmin] = isAdminUser
+                        // Admins get unlimited requests
+                        it[requestLimit] = if (isAdminUser) -1 else 100
                     }[Users.id].value
                 }
 
