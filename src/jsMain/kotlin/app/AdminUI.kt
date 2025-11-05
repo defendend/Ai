@@ -48,45 +48,79 @@ class AdminUI {
     private var userToDelete: Int? = null
 
     init {
+        console.log("AdminUI: Initializing...")
+
         // Check authentication
         val token = localStorage["jwt_token"]
         val currentUserEmail = localStorage["user_email"]
 
+        console.log("AdminUI: token exists:", token != null)
+        console.log("AdminUI: user_email:", currentUserEmail)
+
         if (token == null) {
+            console.error("AdminUI: No token found, redirecting to login")
             window.location.href = "/"
             throw RuntimeException("Not authenticated, redirecting...")
         }
 
         // Check if user is admin
         if (currentUserEmail != "alexseera@yandex.ru") {
-            console.error("Access denied: User is not admin")
+            console.error("AdminUI: Access denied - User is not admin, email:", currentUserEmail)
             window.location.href = "/chats"
             throw RuntimeException("Access denied, redirecting to chats...")
         }
 
-        // Get DOM elements
-        usersTableBody = document.getElementById("usersTableBody") as HTMLTableSectionElement
-        createUserBtn = document.getElementById("createUserBtn") as HTMLButtonElement
-        backToChatBtn = document.getElementById("backToChatBtn") as HTMLButtonElement
-        userModal = document.getElementById("userModal") as HTMLDivElement
-        modalTitle = document.getElementById("modalTitle") as HTMLHeadingElement
-        userEmail = document.getElementById("userEmail") as HTMLInputElement
-        userPassword = document.getElementById("userPassword") as HTMLInputElement
-        userIsAdmin = document.getElementById("userIsAdmin") as HTMLInputElement
-        userProviders = document.getElementById("userProviders") as HTMLInputElement
-        userLimit = document.getElementById("userLimit") as HTMLInputElement
-        saveUserBtn = document.getElementById("saveUserBtn") as HTMLButtonElement
-        cancelUserBtn = document.getElementById("cancelUserBtn") as HTMLButtonElement
-        adminCheckboxContainer = document.getElementById("adminCheckboxContainer") as HTMLDivElement
-        deleteModal = document.getElementById("deleteModal") as HTMLDivElement
-        deleteUserEmail = document.getElementById("deleteUserEmail") as HTMLSpanElement
-        confirmDeleteBtn = document.getElementById("confirmDeleteBtn") as HTMLButtonElement
-        cancelDeleteBtn = document.getElementById("cancelDeleteBtn") as HTMLButtonElement
-        passwordContainer = document.getElementById("passwordContainer") as HTMLDivElement
-        messageContainer = document.getElementById("messageContainer") as HTMLDivElement
+        console.log("AdminUI: Admin check passed, loading DOM elements...")
 
-        setupEventListeners()
-        loadUsers()
+        try {
+            // Get DOM elements with individual error handling
+            usersTableBody = (document.getElementById("usersTableBody") as? HTMLTableSectionElement)
+                ?: throw RuntimeException("usersTableBody not found")
+            createUserBtn = (document.getElementById("createUserBtn") as? HTMLButtonElement)
+                ?: throw RuntimeException("createUserBtn not found")
+            backToChatBtn = (document.getElementById("backToChatBtn") as? HTMLButtonElement)
+                ?: throw RuntimeException("backToChatBtn not found")
+            userModal = (document.getElementById("userModal") as? HTMLDivElement)
+                ?: throw RuntimeException("userModal not found")
+            modalTitle = (document.getElementById("modalTitle") as? HTMLHeadingElement)
+                ?: throw RuntimeException("modalTitle not found")
+            userEmail = (document.getElementById("userEmail") as? HTMLInputElement)
+                ?: throw RuntimeException("userEmail not found")
+            userPassword = (document.getElementById("userPassword") as? HTMLInputElement)
+                ?: throw RuntimeException("userPassword not found")
+            userIsAdmin = (document.getElementById("userIsAdmin") as? HTMLInputElement)
+                ?: throw RuntimeException("userIsAdmin not found")
+            userProviders = (document.getElementById("userProviders") as? HTMLInputElement)
+                ?: throw RuntimeException("userProviders not found")
+            userLimit = (document.getElementById("userLimit") as? HTMLInputElement)
+                ?: throw RuntimeException("userLimit not found")
+            saveUserBtn = (document.getElementById("saveUserBtn") as? HTMLButtonElement)
+                ?: throw RuntimeException("saveUserBtn not found")
+            cancelUserBtn = (document.getElementById("cancelUserBtn") as? HTMLButtonElement)
+                ?: throw RuntimeException("cancelUserBtn not found")
+            adminCheckboxContainer = (document.getElementById("adminCheckboxContainer") as? HTMLDivElement)
+                ?: throw RuntimeException("adminCheckboxContainer not found")
+            deleteModal = (document.getElementById("deleteModal") as? HTMLDivElement)
+                ?: throw RuntimeException("deleteModal not found")
+            deleteUserEmail = (document.getElementById("deleteUserEmail") as? HTMLSpanElement)
+                ?: throw RuntimeException("deleteUserEmail not found")
+            confirmDeleteBtn = (document.getElementById("confirmDeleteBtn") as? HTMLButtonElement)
+                ?: throw RuntimeException("confirmDeleteBtn not found")
+            cancelDeleteBtn = (document.getElementById("cancelDeleteBtn") as? HTMLButtonElement)
+                ?: throw RuntimeException("cancelDeleteBtn not found")
+            passwordContainer = (document.getElementById("passwordContainer") as? HTMLDivElement)
+                ?: throw RuntimeException("passwordContainer not found")
+            messageContainer = (document.getElementById("messageContainer") as? HTMLDivElement)
+                ?: throw RuntimeException("messageContainer not found")
+
+            console.log("AdminUI: All DOM elements loaded successfully")
+
+            setupEventListeners()
+            loadUsers()
+        } catch (e: Exception) {
+            console.error("AdminUI: Failed to load DOM elements:", e.message)
+            throw e
+        }
     }
 
     private fun setupEventListeners() {
