@@ -120,6 +120,7 @@ class ChatUI {
         setupEventListeners()
         updateUITexts()
         checkAdminAccess()
+        filterProviderOptions()
         loadChatsFromServer()
     }
 
@@ -127,6 +128,39 @@ class ChatUI {
         val isAdmin = localStorage["is_admin"]?.toBoolean() ?: false
         if (isAdmin) {
             adminBtn.style.display = "inline-block"
+        }
+    }
+
+    private fun filterProviderOptions() {
+        // Get allowed providers from localStorage
+        val allowedProvidersStr = localStorage["allowed_providers"] ?: "deepseek,claude"
+        val allowedProviders = allowedProvidersStr.split(",").map { it.trim() }.toSet()
+
+        console.log("Allowed providers for user: $allowedProviders")
+
+        // Get all option elements
+        val options = providerSelect.querySelectorAll("option")
+
+        // Filter options based on allowed providers
+        options.asList().forEach { option ->
+            val optionElement = option as org.w3c.dom.HTMLOptionElement
+            val providerValue = optionElement.value
+
+            if (providerValue !in allowedProviders) {
+                // Remove option if not allowed
+                providerSelect.removeChild(optionElement)
+                console.log("Removed provider option: $providerValue (not allowed)")
+            }
+        }
+
+        // If current provider is not allowed, select first available
+        if (currentProvider !in allowedProviders) {
+            val firstAllowed = allowedProviders.firstOrNull()
+            if (firstAllowed != null) {
+                currentProvider = firstAllowed
+                providerSelect.value = firstAllowed
+                console.log("Switched to first allowed provider: $firstAllowed")
+            }
         }
     }
 

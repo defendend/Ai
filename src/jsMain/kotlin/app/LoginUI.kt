@@ -95,6 +95,7 @@ class LoginUI {
                         localStorage["user_id"] = response.user.id.toString()
                         localStorage["user_email"] = response.user.email
                         localStorage["is_admin"] = response.user.isAdmin.toString()
+                        localStorage["allowed_providers"] = response.user.allowedProviders
 
                         // Redirect to chats
                         window.location.href = "/chats"

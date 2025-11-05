@@ -65,6 +65,21 @@ private suspend fun checkAndIncrementRequestLimit(userId: Int): Pair<Boolean, St
     }
 }
 
+private suspend fun checkProviderAccess(userId: Int, provider: String): Pair<Boolean, String?> {
+    return dbQuery {
+        val user = Users.select { Users.id eq userId }.singleOrNull()
+            ?: return@dbQuery Pair(false, "User not found")
+
+        val allowedProviders = user[Users.allowedProviders].split(",").map { it.trim() }
+
+        if (provider !in allowedProviders) {
+            return@dbQuery Pair(false, "Access denied. Provider '$provider' is not allowed for this user. Allowed: ${allowedProviders.joinToString(", ")}")
+        }
+
+        Pair(true, null)
+    }
+}
+
 fun Route.chatRoutes() {
     authenticate("auth-jwt") {
         route("/api/chats") {
@@ -118,6 +133,13 @@ fun Route.chatRoutes() {
                     return@post
                 }
 
+                // Check if user has access to the requested provider
+                val (providerAllowed, providerError) = checkProviderAccess(userId, request.provider)
+                if (!providerAllowed) {
+                    call.respond(HttpStatusCode.Forbidden, ErrorResponse(providerError ?: "Provider access denied"))
+                    return@post
+                }
+
             try {
                 // Sanitize input to prevent XSS
                 val sanitizedTitle = SecurityUtils.sanitizeChatTitle(request.title)
@@ -162,6 +184,15 @@ fun Route.chatRoutes() {
             if (chatId == null) {
                 call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid chat ID"))
                 return@patch
+            }
+
+            // If provider is being updated, check access
+            if (request.provider != null) {
+                val (providerAllowed, providerError) = checkProviderAccess(userId, request.provider)
+                if (!providerAllowed) {
+                    call.respond(HttpStatusCode.Forbidden, ErrorResponse(providerError ?: "Provider access denied"))
+                    return@patch
+                }
             }
 
             // Provider and title are optional updates
@@ -342,6 +373,14 @@ fun Route.chatRoutes() {
                     return@post
                 }
 
+                // Check if user has access to the chat's provider
+                val chatProvider = chat[Chats.provider]
+                val (providerAllowed, providerError) = checkProviderAccess(userId, chatProvider)
+                if (!providerAllowed) {
+                    call.respond(HttpStatusCode.Forbidden, ErrorResponse(providerError ?: "Provider access denied"))
+                    return@post
+                }
+
                 // Save user message
                 val userMessageId = dbQuery {
                     Messages.insert {
@@ -444,6 +483,14 @@ fun Route.chatRoutes() {
 
                 if (chat == null) {
                     call.respond(HttpStatusCode.NotFound, ErrorResponse("Chat not found"))
+                    return@post
+                }
+
+                // Check if user has access to the chat's provider
+                val chatProvider = chat[Chats.provider]
+                val (providerAllowed, providerError) = checkProviderAccess(userId, chatProvider)
+                if (!providerAllowed) {
+                    call.respond(HttpStatusCode.Forbidden, ErrorResponse(providerError ?: "Provider access denied"))
                     return@post
                 }
 
