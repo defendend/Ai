@@ -1,6 +1,7 @@
 package app
 
 import app.database.DatabaseFactory
+import app.routes.adminRoutes
 import app.routes.authRoutes
 import app.routes.chatRoutes
 import com.auth0.jwt.JWT
@@ -129,5 +130,6 @@ fun Application.module() {
 
         authRoutes()
         chatRoutes()
+        adminRoutes()
     }
 }

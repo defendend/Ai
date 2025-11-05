@@ -11,6 +11,11 @@ object Users : IntIdTable("users") {
     val email = varchar("email", 255).uniqueIndex()
     val passwordHash = varchar("password_hash", 255)
     val createdAt = timestamp("created_at").defaultExpression(CurrentTimestamp())
+    val isAdmin = bool("is_admin").default(false)
+    val allowedProviders = text("allowed_providers").default("deepseek,claude") // Comma-separated list
+    val requestLimit = integer("request_limit").default(100) // Max requests per day
+    val requestCount = integer("request_count").default(0) // Current daily request count
+    val lastRequestReset = timestamp("last_request_reset").defaultExpression(CurrentTimestamp())
 }
 
 object Chats : IntIdTable("chats") {
@@ -50,7 +55,11 @@ object Messages : IntIdTable("messages") {
 @Serializable
 data class UserDTO(
     val id: Int,
-    val email: String
+    val email: String,
+    val isAdmin: Boolean = false,
+    val allowedProviders: String = "deepseek,claude",
+    val requestLimit: Int = 100,
+    val requestCount: Int = 0
 )
 
 @Serializable
@@ -143,10 +152,30 @@ data class ErrorResponse(
     val error: String
 )
 
+// Admin DTOs
+@Serializable
+data class CreateUserRequest(
+    val email: String,
+    val password: String,
+    val allowedProviders: String = "deepseek,claude",
+    val requestLimit: Int = 100
+)
+
+@Serializable
+data class UpdateUserRequest(
+    val allowedProviders: String? = null,
+    val requestLimit: Int? = null,
+    val requestCount: Int? = null
+)
+
 // Extension functions to convert database rows to DTOs
 fun ResultRow.toUserDTO() = UserDTO(
     id = this[Users.id].value,
-    email = this[Users.email]
+    email = this[Users.email],
+    isAdmin = this[Users.isAdmin],
+    allowedProviders = this[Users.allowedProviders],
+    requestLimit = this[Users.requestLimit],
+    requestCount = this[Users.requestCount]
 )
 
 fun ResultRow.toChatDTO(messageCount: Int = 0, lastMessage: String? = null) = ChatDTO(

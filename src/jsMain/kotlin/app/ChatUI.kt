@@ -51,6 +51,7 @@ class ChatUI {
     private val cancelRenameBtn: HTMLButtonElement
     private val chatHeaderTitle: HTMLHeadingElement
     private val logoutBtn: HTMLButtonElement
+    private val adminBtn: HTMLButtonElement
     private val settingsBtn: HTMLButtonElement
     private val settingsModal: HTMLDivElement
     private val temperatureInput: HTMLInputElement
@@ -97,6 +98,7 @@ class ChatUI {
         cancelRenameBtn = document.getElementById("cancelRenameBtn") as HTMLButtonElement
         chatHeaderTitle = document.querySelector(".chat-header h1") as HTMLHeadingElement
         logoutBtn = document.getElementById("logoutBtn") as HTMLButtonElement
+        adminBtn = document.getElementById("adminBtn") as HTMLButtonElement
         settingsBtn = document.getElementById("settingsBtn") as HTMLButtonElement
         settingsModal = document.getElementById("settingsModal") as HTMLDivElement
         temperatureInput = document.getElementById("temperatureInput") as HTMLInputElement
@@ -117,7 +119,15 @@ class ChatUI {
 
         setupEventListeners()
         updateUITexts()
+        checkAdminAccess()
         loadChatsFromServer()
+    }
+
+    private fun checkAdminAccess() {
+        val userEmail = localStorage["user_email"]
+        if (userEmail == "alexseera@yandex.ru") {
+            adminBtn.style.display = "inline-block"
+        }
     }
 
     private fun setupEventListeners() {
@@ -134,6 +144,11 @@ class ChatUI {
         newChatBtn.onclick = { createNewChat(); null }
 
         logoutBtn.onclick = { handleLogout(); null }
+
+        adminBtn.onclick = {
+            window.location.href = "/admin"
+            null
+        }
 
         providerSelect.onchange = {
             val newProvider = providerSelect.value

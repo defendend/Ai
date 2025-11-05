@@ -78,7 +78,11 @@ data class LoginRequest(
 @Serializable
 data class UserDTO(
     val id: Int,
-    val email: String
+    val email: String,
+    val isAdmin: Boolean = false,
+    val allowedProviders: String = "deepseek,claude",
+    val requestLimit: Int = 100,
+    val requestCount: Int = 0
 )
 
 @Serializable
@@ -519,6 +523,127 @@ class BackendApiClient {
             val text = response.text().await()
             val loginResponse = json.decodeFromString<LoginResponse>(text)
             Result.success(loginResponse)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Admin API methods
+    suspend fun getUsers(): Result<List<AdminUser>> {
+        return try {
+            val response = window.fetch(
+                "$baseUrl/api/admin/users",
+                RequestInit(
+                    method = "GET",
+                    headers = getAuthHeaders()
+                )
+            ).await()
+
+            if (!response.ok) {
+                val errorText = response.text().await()
+                return Result.failure(Exception("Failed to fetch users: $errorText"))
+            }
+
+            val text = response.text().await()
+            val users = json.decodeFromString<List<UserDTO>>(text)
+            val adminUsers = users.map {
+                AdminUser(it.id, it.email, it.isAdmin, it.allowedProviders, it.requestLimit, it.requestCount)
+            }
+            Result.success(adminUsers)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun createUser(email: String, password: String, allowedProviders: String, requestLimit: Int): Result<AdminUser> {
+        return try {
+            val requestBody = """{"email":"$email","password":"$password","allowedProviders":"$allowedProviders","requestLimit":$requestLimit}"""
+
+            val response = window.fetch(
+                "$baseUrl/api/admin/users",
+                RequestInit(
+                    method = "POST",
+                    headers = getAuthHeaders(),
+                    body = requestBody
+                )
+            ).await()
+
+            if (!response.ok) {
+                val errorText = response.text().await()
+                return Result.failure(Exception(errorText))
+            }
+
+            val text = response.text().await()
+            val user = json.decodeFromString<UserDTO>(text)
+            Result.success(AdminUser(user.id, user.email, user.isAdmin, user.allowedProviders, user.requestLimit, user.requestCount))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateUser(userId: Int, allowedProviders: String, requestLimit: Int): Result<AdminUser> {
+        return try {
+            val requestBody = """{"allowedProviders":"$allowedProviders","requestLimit":$requestLimit}"""
+
+            val response = window.fetch(
+                "$baseUrl/api/admin/users/$userId",
+                RequestInit(
+                    method = "PUT",
+                    headers = getAuthHeaders(),
+                    body = requestBody
+                )
+            ).await()
+
+            if (!response.ok) {
+                val errorText = response.text().await()
+                return Result.failure(Exception(errorText))
+            }
+
+            val text = response.text().await()
+            val user = json.decodeFromString<UserDTO>(text)
+            Result.success(AdminUser(user.id, user.email, user.isAdmin, user.allowedProviders, user.requestLimit, user.requestCount))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun deleteUser(userId: Int): Result<Unit> {
+        return try {
+            val response = window.fetch(
+                "$baseUrl/api/admin/users/$userId",
+                RequestInit(
+                    method = "DELETE",
+                    headers = getAuthHeaders()
+                )
+            ).await()
+
+            if (!response.ok) {
+                val errorText = response.text().await()
+                return Result.failure(Exception(errorText))
+            }
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun resetUserRequests(userId: Int): Result<Unit> {
+        return try {
+            val response = window.fetch(
+                "$baseUrl/api/admin/users/$userId/reset-requests",
+                RequestInit(
+                    method = "POST",
+                    headers = getAuthHeaders()
+                )
+            ).await()
+
+            if (!response.ok) {
+                val errorText = response.text().await()
+                return Result.failure(Exception(errorText))
+            }
+
+            Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }

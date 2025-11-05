@@ -20,6 +20,10 @@ fun main() {
                     console.log("Initializing chat page")
                     ChatUI()
                 }
+                path == "/admin" || path == "/admin.html" -> {
+                    console.log("Initializing admin page")
+                    AdminUI()
+                }
                 else -> {
                     console.log("Unknown path: $path, defaulting to login")
                     window.location.href = "/"
