@@ -4,6 +4,9 @@ import app.database.DatabaseFactory
 import app.routes.adminRoutes
 import app.routes.authRoutes
 import app.routes.chatRoutes
+import app.security.RateLimiters
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import io.ktor.http.*
@@ -30,6 +33,22 @@ fun main() {
 fun Application.module() {
     // Initialize database
     DatabaseFactory.init()
+
+    // Start rate limiter cleanup task (runs every 5 minutes)
+    launch {
+        while (true) {
+            delay(5 * 60 * 1000) // 5 minutes
+            try {
+                RateLimiters.login.cleanup()
+                RateLimiters.registration.cleanup()
+                RateLimiters.passwordReset.cleanup()
+                RateLimiters.api.cleanup()
+                println("[RateLimiter] Cleanup completed")
+            } catch (e: Exception) {
+                println("[RateLimiter] Cleanup error: ${e.message}")
+            }
+        }
+    }
 
     // Enable double receive to read request body multiple times
     install(DoubleReceive)

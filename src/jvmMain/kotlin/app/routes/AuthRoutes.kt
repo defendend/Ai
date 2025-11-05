@@ -12,6 +12,8 @@ import io.ktor.server.routing.*
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.mindrot.jbcrypt.BCrypt
+import app.security.RateLimiters
+import app.security.CsrfProtection
 import java.util.*
 
 private fun isValidEmail(email: String): Boolean {
@@ -22,6 +24,26 @@ private fun isValidEmail(email: String): Boolean {
 fun Route.authRoutes() {
     route("/api/auth") {
         post("/register") {
+            // CSRF Protection
+            if (!CsrfProtection.isValidRequest(call)) {
+                call.respond(HttpStatusCode.Forbidden, ErrorResponse("CSRF validation failed"))
+                return@post
+            }
+
+            // Rate Limiting: 3 registrations per hour per IP
+            val clientIP = CsrfProtection.getClientIP(call)
+            val (allowed, remaining) = RateLimiters.registration.tryAcquire(clientIP)
+
+            if (!allowed) {
+                val retryAfter = RateLimiters.registration.getRetryAfterSeconds(clientIP)
+                call.response.header("Retry-After", retryAfter.toString())
+                call.respond(
+                    HttpStatusCode.TooManyRequests,
+                    ErrorResponse("Too many registration attempts. Please try again later.")
+                )
+                return@post
+            }
+
             val request = call.receive<RegisterRequest>()
 
             // Validate email format
@@ -83,6 +105,30 @@ fun Route.authRoutes() {
         }
 
         post("/login") {
+            // CSRF Protection
+            if (!CsrfProtection.isValidRequest(call)) {
+                call.respond(HttpStatusCode.Forbidden, ErrorResponse("CSRF validation failed"))
+                return@post
+            }
+
+            // Rate Limiting: 5 login attempts per 15 minutes per IP
+            val clientIP = CsrfProtection.getClientIP(call)
+            val (allowed, remaining) = RateLimiters.login.tryAcquire(clientIP)
+
+            if (!allowed) {
+                val retryAfter = RateLimiters.login.getRetryAfterSeconds(clientIP)
+                call.response.header("Retry-After", retryAfter.toString())
+                call.respond(
+                    HttpStatusCode.TooManyRequests,
+                    ErrorResponse("Too many login attempts. Please try again in ${retryAfter / 60} minutes.")
+                )
+                return@post
+            }
+
+            // Add rate limit headers
+            call.response.header("X-RateLimit-Limit", "5")
+            call.response.header("X-RateLimit-Remaining", remaining.toString())
+
             val request = call.receive<LoginRequest>()
 
             try {
@@ -100,6 +146,9 @@ fun Route.authRoutes() {
                     call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid email or password"))
                     return@post
                 }
+
+                // Successful login - reset rate limit for this IP
+                RateLimiters.login.reset(clientIP)
 
                 // Generate JWT token
                 val userId = user[Users.id].value

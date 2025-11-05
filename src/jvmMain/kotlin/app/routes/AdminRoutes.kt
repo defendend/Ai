@@ -12,6 +12,7 @@ import io.ktor.server.routing.*
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.mindrot.jbcrypt.BCrypt
+import app.security.CsrfProtection
 
 private fun isValidEmail(email: String): Boolean {
     val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$".toRegex()
@@ -100,6 +101,12 @@ fun Route.adminRoutes() {
 
             // Create new user
             post("/users") {
+                // CSRF Protection
+                if (!CsrfProtection.isValidRequest(call)) {
+                    call.respond(HttpStatusCode.Forbidden, ErrorResponse("CSRF validation failed"))
+                    return@post
+                }
+
                 val request = call.receive<CreateUserRequest>()
 
                 // Validate email format
@@ -154,6 +161,12 @@ fun Route.adminRoutes() {
 
             // Update user settings
             put("/users/{id}") {
+                // CSRF Protection
+                if (!CsrfProtection.isValidRequest(call)) {
+                    call.respond(HttpStatusCode.Forbidden, ErrorResponse("CSRF validation failed"))
+                    return@put
+                }
+
                 val userId = call.parameters["id"]?.toIntOrNull()
                 if (userId == null) {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid user ID"))
@@ -199,6 +212,12 @@ fun Route.adminRoutes() {
 
             // Delete user
             delete("/users/{id}") {
+                // CSRF Protection
+                if (!CsrfProtection.isValidRequest(call)) {
+                    call.respond(HttpStatusCode.Forbidden, ErrorResponse("CSRF validation failed"))
+                    return@delete
+                }
+
                 val userId = call.parameters["id"]?.toIntOrNull()
                 if (userId == null) {
                     call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid user ID"))

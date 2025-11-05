@@ -4,6 +4,7 @@ import app.database.DatabaseFactory.dbQuery
 import app.models.*
 import app.services.AIService
 import app.utils.SecurityUtils
+import app.security.CsrfProtection
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -103,6 +104,12 @@ fun Route.chatRoutes() {
 
             // Create new chat
             post {
+                // CSRF Protection
+                if (!CsrfProtection.isValidRequest(call)) {
+                    call.respond(HttpStatusCode.Forbidden, ErrorResponse("CSRF validation failed"))
+                    return@post
+                }
+
                 val userId = call.getUserId()
                 val request = call.receive<CreateChatRequest>()
 
@@ -137,6 +144,12 @@ fun Route.chatRoutes() {
 
         // Update chat (provider and/or title)
         patch("/{chatId}") {
+            // CSRF Protection
+            if (!CsrfProtection.isValidRequest(call)) {
+                call.respond(HttpStatusCode.Forbidden, ErrorResponse("CSRF validation failed"))
+                return@patch
+            }
+
             val userId = call.getUserId()
             val chatId = call.parameters["chatId"]?.toIntOrNull()
             val request = call.receive<UpdateChatRequest>()
@@ -200,6 +213,12 @@ fun Route.chatRoutes() {
 
         // Delete chat
         delete("/{chatId}") {
+            // CSRF Protection
+            if (!CsrfProtection.isValidRequest(call)) {
+                call.respond(HttpStatusCode.Forbidden, ErrorResponse("CSRF validation failed"))
+                return@delete
+            }
+
             val userId = call.getUserId()
             val chatIdParam = call.parameters["chatId"]?.toIntOrNull()
 
@@ -282,6 +301,12 @@ fun Route.chatRoutes() {
 
         // Send message to chat
         post("/{chatId}/messages") {
+            // CSRF Protection
+            if (!CsrfProtection.isValidRequest(call)) {
+                call.respond(HttpStatusCode.Forbidden, ErrorResponse("CSRF validation failed"))
+                return@post
+            }
+
             val userId = call.getUserId()
             val chatId = call.parameters["chatId"]?.toIntOrNull()
             val request = call.receive<SendMessageRequest>()
@@ -381,6 +406,12 @@ fun Route.chatRoutes() {
 
         // Send message with streaming (SSE)
         post("/{chatId}/messages/stream") {
+            // CSRF Protection
+            if (!CsrfProtection.isValidRequest(call)) {
+                call.respond(HttpStatusCode.Forbidden, ErrorResponse("CSRF validation failed"))
+                return@post
+            }
+
             val userId = call.getUserId()
             val chatId = call.parameters["chatId"]?.toIntOrNull()
             val request = call.receive<SendMessageRequest>()
