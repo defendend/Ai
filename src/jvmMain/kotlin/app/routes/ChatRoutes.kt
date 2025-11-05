@@ -128,6 +128,13 @@ fun Route.chatRoutes() {
                         // Response format settings
                         request.responseFormat?.let { format -> it[responseFormat] = format }
                         it[responseSchema] = request.responseSchema
+
+                        // General text response settings
+                        request.responseStyle?.let { style -> it[responseStyle] = style }
+                        request.responseLength?.let { length -> it[responseLength] = length }
+                        request.language?.let { lang -> it[language] = lang }
+                        request.includeExamples?.let { examples -> it[includeExamples] = examples }
+                        request.contentFormat?.let { format -> it[contentFormat] = format }
                     } > 0
                 }
 
@@ -269,7 +276,12 @@ fun Route.chatRoutes() {
                     topP = chat[Chats.topP],
                     systemPrompt = chat[Chats.systemPrompt],
                     responseFormat = chat[Chats.responseFormat],
-                    responseSchema = chat[Chats.responseSchema]
+                    responseSchema = chat[Chats.responseSchema],
+                    responseStyle = chat[Chats.responseStyle],
+                    responseLength = chat[Chats.responseLength],
+                    language = chat[Chats.language],
+                    includeExamples = chat[Chats.includeExamples],
+                    contentFormat = chat[Chats.contentFormat]
                 )
                 val aiResponse = AIService.sendMessage(provider, allMessages, parameters)
 
@@ -354,7 +366,12 @@ fun Route.chatRoutes() {
                     systemPrompt = chat[Chats.systemPrompt],
                     streaming = true,
                     responseFormat = chat[Chats.responseFormat],
-                    responseSchema = chat[Chats.responseSchema]
+                    responseSchema = chat[Chats.responseSchema],
+                    responseStyle = chat[Chats.responseStyle],
+                    responseLength = chat[Chats.responseLength],
+                    language = chat[Chats.language],
+                    includeExamples = chat[Chats.includeExamples],
+                    contentFormat = chat[Chats.contentFormat]
                 )
 
                 // Set SSE headers before responding

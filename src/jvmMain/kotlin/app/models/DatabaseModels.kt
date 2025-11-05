@@ -30,6 +30,13 @@ object Chats : IntIdTable("chats") {
     // Response format settings
     val responseFormat = varchar("response_format", 10).default("none") // "none", "json", "xml"
     val responseSchema = text("response_schema").nullable().default(null) // JSON/XML schema
+
+    // General text response settings
+    val responseStyle = varchar("response_style", 20).default("professional") // professional, friendly, formal, casual, academic, creative
+    val responseLength = varchar("response_length", 20).default("standard") // brief, concise, standard, detailed, comprehensive
+    val language = varchar("language", 20).default("auto") // auto, russian, english, mixed
+    val includeExamples = bool("include_examples").default(false)
+    val contentFormat = varchar("content_format", 20).default("paragraphs") // bullets, paragraphs, steps, qa, storytelling
 }
 
 object Messages : IntIdTable("messages") {
@@ -61,7 +68,12 @@ data class ChatDTO(
     val systemPrompt: String? = null,
     val streaming: Boolean = true,
     val responseFormat: String = "none",
-    val responseSchema: String? = null
+    val responseSchema: String? = null,
+    val responseStyle: String = "professional",
+    val responseLength: String = "standard",
+    val language: String = "auto",
+    val includeExamples: Boolean = false,
+    val contentFormat: String = "paragraphs"
 )
 
 @Serializable
@@ -113,7 +125,12 @@ data class UpdateChatRequest(
     val systemPrompt: String? = null,
     val streaming: Boolean? = null,
     val responseFormat: String? = null,
-    val responseSchema: String? = null
+    val responseSchema: String? = null,
+    val responseStyle: String? = null,
+    val responseLength: String? = null,
+    val language: String? = null,
+    val includeExamples: Boolean? = null,
+    val contentFormat: String? = null
 )
 
 @Serializable
@@ -146,7 +163,12 @@ fun ResultRow.toChatDTO(messageCount: Int = 0, lastMessage: String? = null) = Ch
     systemPrompt = this[Chats.systemPrompt],
     streaming = this[Chats.streaming],
     responseFormat = this[Chats.responseFormat],
-    responseSchema = this[Chats.responseSchema]
+    responseSchema = this[Chats.responseSchema],
+    responseStyle = this[Chats.responseStyle],
+    responseLength = this[Chats.responseLength],
+    language = this[Chats.language],
+    includeExamples = this[Chats.includeExamples],
+    contentFormat = this[Chats.contentFormat]
 )
 
 fun ResultRow.toMessageDTO() = MessageDTO(

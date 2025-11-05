@@ -46,7 +46,12 @@ object AIService {
         val systemPrompt: String? = null,
         val streaming: Boolean = false,
         val responseFormat: String = "none",
-        val responseSchema: String? = null
+        val responseSchema: String? = null,
+        val responseStyle: String = "professional",
+        val responseLength: String = "standard",
+        val language: String = "auto",
+        val includeExamples: Boolean = false,
+        val contentFormat: String = "paragraphs"
     )
 
     suspend fun sendMessage(
@@ -100,8 +105,17 @@ object AIService {
         val apiKey = System.getenv("DEEPSEEK_API_KEY")
             ?: throw IllegalStateException("DEEPSEEK_API_KEY environment variable is not set")
 
-        // Build system prompt with format instructions
-        val systemPrompt = buildSystemPromptWithFormat(parameters.systemPrompt, parameters.responseFormat, parameters.responseSchema)
+        // Build system prompt with format and style instructions
+        val systemPrompt = buildSystemPromptWithFormat(
+            basePrompt = parameters.systemPrompt,
+            format = parameters.responseFormat,
+            schema = parameters.responseSchema,
+            style = parameters.responseStyle,
+            length = parameters.responseLength,
+            language = parameters.language,
+            includeExamples = parameters.includeExamples,
+            contentFormat = parameters.contentFormat
+        )
 
         // Add system prompt as first message if provided
         val messagesWithSystem = if (systemPrompt != null) {
@@ -231,8 +245,17 @@ object AIService {
         val apiKey = System.getenv("DEEPSEEK_API_KEY")
             ?: throw IllegalStateException("DEEPSEEK_API_KEY environment variable is not set")
 
-        // Build system prompt with format instructions
-        val systemPrompt = buildSystemPromptWithFormat(parameters.systemPrompt, parameters.responseFormat, parameters.responseSchema)
+        // Build system prompt with format and style instructions
+        val systemPrompt = buildSystemPromptWithFormat(
+            basePrompt = parameters.systemPrompt,
+            format = parameters.responseFormat,
+            schema = parameters.responseSchema,
+            style = parameters.responseStyle,
+            length = parameters.responseLength,
+            language = parameters.language,
+            includeExamples = parameters.includeExamples,
+            contentFormat = parameters.contentFormat
+        )
 
         // Add system prompt as first message if provided
         val messagesWithSystem = if (systemPrompt != null) {
@@ -310,41 +333,97 @@ object AIService {
     }
 
     /**
-     * Builds system prompt with format instructions
+     * Builds system prompt with format and style instructions
      */
     private fun buildSystemPromptWithFormat(
         basePrompt: String?,
         format: String,
-        schema: String?
+        schema: String?,
+        style: String = "professional",
+        length: String = "standard",
+        language: String = "auto",
+        includeExamples: Boolean = false,
+        contentFormat: String = "paragraphs"
     ): String? {
-        if (format == "none") {
-            return basePrompt
+        val instructions = mutableListOf<String>()
+
+        // Add base prompt if provided
+        if (basePrompt != null) {
+            instructions.add(basePrompt)
         }
 
-        val formatInstructions = when (format) {
-            "json" -> {
-                val schemaText = if (schema != null) {
-                    "\n\nYou must respond with JSON that matches this exact schema:\n$schema"
-                } else {
-                    "\n\nYou must respond with valid JSON only."
-                }
-                "IMPORTANT: Your response must be in JSON format.$schemaText\nDo not include any text outside the JSON structure."
-            }
-            "xml" -> {
-                val schemaText = if (schema != null) {
-                    "\n\nYou must respond with XML that matches this exact schema:\n$schema"
-                } else {
-                    "\n\nYou must respond with valid XML only."
-                }
-                "IMPORTANT: Your response must be in XML format.$schemaText\nDo not include any text outside the XML structure."
-            }
-            else -> return basePrompt
+        // Response style
+        val styleText = when (style) {
+            "professional" -> "Maintain a professional and business-appropriate tone."
+            "friendly" -> "Use a warm, friendly, and approachable tone."
+            "formal" -> "Use formal language and maintain strict professionalism."
+            "casual" -> "Use casual, conversational language."
+            "academic" -> "Use academic language with proper terminology and citations where appropriate."
+            "creative" -> "Be creative and expressive in your responses."
+            else -> null
+        }
+        if (styleText != null) instructions.add(styleText)
+
+        // Response length
+        val lengthText = when (length) {
+            "brief" -> "Keep responses brief (1-2 sentences)."
+            "concise" -> "Keep responses concise (1 paragraph maximum)."
+            "standard" -> "Provide standard-length responses (2-3 paragraphs)."
+            "detailed" -> "Provide detailed, comprehensive responses."
+            "comprehensive" -> "Provide exhaustive, in-depth responses covering all aspects."
+            else -> null
+        }
+        if (lengthText != null) instructions.add(lengthText)
+
+        // Language
+        val languageText = when (language) {
+            "russian" -> "Always respond in Russian language."
+            "english" -> "Always respond in English language."
+            "mixed" -> "You may use mixed Russian and English if appropriate."
+            else -> null // auto-detect
+        }
+        if (languageText != null) instructions.add(languageText)
+
+        // Include examples
+        if (includeExamples) {
+            instructions.add("Include relevant examples to illustrate your points.")
         }
 
-        return if (basePrompt != null) {
-            "$basePrompt\n\n$formatInstructions"
-        } else {
-            formatInstructions
+        // Content format
+        val formatText = when (contentFormat) {
+            "bullets" -> "Format your response as bullet points or lists."
+            "paragraphs" -> "Format your response in clear paragraphs."
+            "steps" -> "Format your response as step-by-step instructions."
+            "qa" -> "Format your response as questions and answers."
+            "storytelling" -> "Present information in a narrative, storytelling format."
+            else -> null
         }
+        if (formatText != null) instructions.add(formatText)
+
+        // Structured format (JSON/XML)
+        if (format != "none") {
+            val structuredInstructions = when (format) {
+                "json" -> {
+                    val schemaText = if (schema != null) {
+                        "\n\nYou must respond with JSON that matches this exact schema:\n$schema"
+                    } else {
+                        "\n\nYou must respond with valid JSON only."
+                    }
+                    "IMPORTANT: Your response must be in JSON format.$schemaText\nDo not include any text outside the JSON structure."
+                }
+                "xml" -> {
+                    val schemaText = if (schema != null) {
+                        "\n\nYou must respond with XML that matches this exact schema:\n$schema"
+                    } else {
+                        "\n\nYou must respond with valid XML only."
+                    }
+                    "IMPORTANT: Your response must be in XML format.$schemaText\nDo not include any text outside the XML structure."
+                }
+                else -> null
+            }
+            if (structuredInstructions != null) instructions.add(structuredInstructions)
+        }
+
+        return if (instructions.isEmpty()) null else instructions.joinToString("\n\n")
     }
 }
