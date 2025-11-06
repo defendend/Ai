@@ -532,7 +532,7 @@ class ChatUI {
                         onChunk = { chunk ->
                             console.log("Received chunk:", chunk)
                             assistantMessage.content += chunk
-                            // Update DOM directly on each chunk
+                            // Update DOM directly on each chunk (plain text during streaming)
                             contentDiv?.textContent = assistantMessage.content
                             scrollToBottom()
                         },
@@ -540,6 +540,9 @@ class ChatUI {
                             hideTypingIndicator()
                             sendBtn.disabled = false
                             isSending = false
+
+                            // Apply markdown rendering to final complete text
+                            contentDiv?.innerHTML = renderMarkdown(assistantMessage.content)
 
                             // Update chat title from first message
                             if (currentMessages.size <= 2) {
