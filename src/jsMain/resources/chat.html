@@ -221,6 +221,21 @@
                             </div>
                             <div class="setting-hint">Include relevant examples to illustrate points</div>
                         </div>
+
+                        <div class="setting-item setting-full" style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
+                            <div class="label-with-tooltip">
+                                <label for="agentTypeSelect" class="modal-label">🤖 Agent Mode:</label>
+                                <span class="tooltip-icon" data-tooltip-key="agentType">ℹ️</span>
+                            </div>
+                            <select id="agentTypeSelect" class="modal-select">
+                                <option value="none">None (Regular Chat)</option>
+                                <option value="requirements_collector">📋 Requirements Collector - Gathers requirements and generates ТЗ</option>
+                                <option value="interview_conductor">💼 Interview Conductor - Conducts interviews and evaluates candidates</option>
+                                <option value="research_assistant">🔍 Research Assistant - Researches topics and produces reports</option>
+                                <option value="problem_solver">🎯 Problem Solver - Analyzes problems and creates action plans</option>
+                            </select>
+                            <div class="setting-hint">Enable goal-oriented agent that collects information and produces a final result</div>
+                        </div>
                     </div>
                     <p class="settings-hint">Leave fields empty to use default values</p>
                 </div>

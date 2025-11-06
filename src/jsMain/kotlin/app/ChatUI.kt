@@ -67,6 +67,7 @@ class ChatUI {
     private val languageSelect: HTMLSelectElement
     private val includeExamplesCheckbox: HTMLInputElement
     private val contentFormatSelect: HTMLSelectElement
+    private val agentTypeSelect: HTMLSelectElement
     private val confirmSettingsBtn: HTMLButtonElement
     private val cancelSettingsBtn: HTMLButtonElement
 
@@ -114,6 +115,7 @@ class ChatUI {
         languageSelect = document.getElementById("languageSelect") as HTMLSelectElement
         includeExamplesCheckbox = document.getElementById("includeExamplesCheckbox") as HTMLInputElement
         contentFormatSelect = document.getElementById("contentFormatSelect") as HTMLSelectElement
+        agentTypeSelect = document.getElementById("agentTypeSelect") as HTMLSelectElement
         confirmSettingsBtn = document.getElementById("confirmSettingsBtn") as HTMLButtonElement
         cancelSettingsBtn = document.getElementById("cancelSettingsBtn") as HTMLButtonElement
 
@@ -643,13 +645,16 @@ class ChatUI {
         val contentDiv = document.createElement("div") as HTMLDivElement
         contentDiv.className = "message-content"
 
-        // Try to parse JSON/XML/HTML for assistant messages
+        // Try to parse JSON/XML/HTML or agent goal completion for assistant messages
         if (message.role == "assistant") {
-            val formattedJson = formatJsonResponse(message.content)
-            val formattedXml = if (formattedJson == null) formatXmlResponse(message.content) else null
-            val formattedHtml = if (formattedJson == null && formattedXml == null) formatHtmlResponse(message.content) else null
+            // Check for agent goal completion first
+            val formattedAgentGoal = formatAgentGoalCompletion(message.content)
+            val formattedJson = if (formattedAgentGoal == null) formatJsonResponse(message.content) else null
+            val formattedXml = if (formattedAgentGoal == null && formattedJson == null) formatXmlResponse(message.content) else null
+            val formattedHtml = if (formattedAgentGoal == null && formattedJson == null && formattedXml == null) formatHtmlResponse(message.content) else null
 
             when {
+                formattedAgentGoal != null -> contentDiv.innerHTML = formattedAgentGoal
                 formattedJson != null -> contentDiv.innerHTML = formattedJson
                 formattedXml != null -> contentDiv.innerHTML = formattedXml
                 formattedHtml != null -> contentDiv.innerHTML = formattedHtml
@@ -799,6 +804,44 @@ class ChatUI {
             trimmedContent
         } catch (e: Exception) {
             console.log("HTML parsing error:", e.message)
+            null
+        }
+    }
+
+    /**
+     * Format agent goal completion marker and extract final result
+     */
+    private fun formatAgentGoalCompletion(content: String): String? {
+        return try {
+            val marker = "=== GOAL ACHIEVED ==="
+            val endMarker = "=== END GOAL ==="
+
+            if (!content.contains(marker)) {
+                return null
+            }
+
+            val startIdx = content.indexOf(marker)
+            val endIdx = content.indexOf(endMarker)
+
+            if (startIdx == -1 || endIdx == -1 || endIdx <= startIdx) {
+                return null
+            }
+
+            // Extract the goal result (between markers)
+            val goalResult = content.substring(startIdx + marker.length, endIdx).trim()
+
+            // Build HTML with special styling
+            """
+            <div style="border: 2px solid #4CAF50; border-radius: 8px; padding: 16px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); margin: 12px 0;">
+                <div style="display: flex; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 2px solid #4CAF50;">
+                    <span style="font-size: 24px; margin-right: 8px;">🎯</span>
+                    <h3 style="margin: 0; color: #2e7d32; font-weight: 600;">Goal Achieved - Final Result</h3>
+                </div>
+                <div style="background: white; border-radius: 6px; padding: 16px; white-space: pre-wrap; font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.6; color: #333;">$goalResult</div>
+            </div>
+            """.trimIndent()
+        } catch (e: Exception) {
+            console.log("Agent goal formatting error:", e.message)
             null
         }
     }
@@ -1070,6 +1113,7 @@ class ChatUI {
                         languageSelect.value = chat.language
                         includeExamplesCheckbox.checked = chat.includeExamples
                         contentFormatSelect.value = chat.contentFormat
+                        agentTypeSelect.value = chat.agentType
 
                         // Show/hide schema container based on format
                         schemaContainer.style.display = if (chat.responseFormat == "none") "none" else "block"
@@ -1129,6 +1173,7 @@ class ChatUI {
         val language = languageSelect.value
         val includeExamples = includeExamplesCheckbox.checked
         val contentFormat = contentFormatSelect.value
+        val agentType = agentTypeSelect.value
 
         hideSettingsModal()
 
@@ -1147,7 +1192,8 @@ class ChatUI {
                     responseLength = responseLength,
                     language = language,
                     includeExamples = includeExamples,
-                    contentFormat = contentFormat
+                    contentFormat = contentFormat,
+                    agentType = agentType
                 )
 
                 result.fold(

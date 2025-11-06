@@ -42,6 +42,10 @@ object Chats : IntIdTable("chats") {
     val language = varchar("language", 20).default("auto") // auto, russian, english, mixed
     val includeExamples = bool("include_examples").default(false)
     val contentFormat = varchar("content_format", 20).default("paragraphs") // bullets, paragraphs, steps, qa, storytelling
+
+    // Agent mode settings
+    val agentType = varchar("agent_type", 30).default("none") // none, requirements_collector, interview_conductor, research_assistant, problem_solver
+    val agentGoalAchieved = bool("agent_goal_achieved").default(false) // Whether agent has completed the goal
 }
 
 object Messages : IntIdTable("messages") {
@@ -82,7 +86,9 @@ data class ChatDTO(
     val responseLength: String = "standard",
     val language: String = "auto",
     val includeExamples: Boolean = false,
-    val contentFormat: String = "paragraphs"
+    val contentFormat: String = "paragraphs",
+    val agentType: String = "none",
+    val agentGoalAchieved: Boolean = false
 )
 
 @Serializable
@@ -139,7 +145,9 @@ data class UpdateChatRequest(
     val responseLength: String? = null,
     val language: String? = null,
     val includeExamples: Boolean? = null,
-    val contentFormat: String? = null
+    val contentFormat: String? = null,
+    val agentType: String? = null,
+    val agentGoalAchieved: Boolean? = null
 )
 
 @Serializable
@@ -198,7 +206,9 @@ fun ResultRow.toChatDTO(messageCount: Int = 0, lastMessage: String? = null) = Ch
     responseLength = this[Chats.responseLength],
     language = this[Chats.language],
     includeExamples = this[Chats.includeExamples],
-    contentFormat = this[Chats.contentFormat]
+    contentFormat = this[Chats.contentFormat],
+    agentType = this[Chats.agentType],
+    agentGoalAchieved = this[Chats.agentGoalAchieved]
 )
 
 fun ResultRow.toMessageDTO() = MessageDTO(

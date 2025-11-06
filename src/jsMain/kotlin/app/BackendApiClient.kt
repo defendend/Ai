@@ -47,7 +47,9 @@ data class ChatResponse(
     val responseLength: String = "standard",
     val language: String = "auto",
     val includeExamples: Boolean = false,
-    val contentFormat: String = "paragraphs"
+    val contentFormat: String = "paragraphs",
+    val agentType: String = "none",
+    val agentGoalAchieved: Boolean = false
 )
 
 @Serializable
@@ -298,7 +300,8 @@ class BackendApiClient {
         responseLength: String?,
         language: String?,
         includeExamples: Boolean?,
-        contentFormat: String?
+        contentFormat: String?,
+        agentType: String?
     ): Result<Unit> {
         return try {
             // Always send all AI parameters to allow resetting to null
@@ -347,6 +350,10 @@ class BackendApiClient {
 
             if (contentFormat != null) {
                 parts.add(""""contentFormat":"$contentFormat"""")
+            }
+
+            if (agentType != null) {
+                parts.add(""""agentType":"$agentType"""")
             }
 
             val requestBody = "{${parts.joinToString(",")}}"

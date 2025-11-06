@@ -5,6 +5,7 @@ import app.models.*
 import app.services.AIService
 import app.utils.SecurityUtils
 import app.security.CsrfProtection
+import app.agents.AgentPresets
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -79,6 +80,16 @@ private suspend fun checkProviderAccess(userId: Int, provider: String): Pair<Boo
 
         Pair(true, null)
     }
+}
+
+private fun getEffectiveSystemPrompt(agentType: String, customSystemPrompt: String?): String? {
+    // If agent mode is enabled, use agent's system prompt
+    if (agentType != "none") {
+        val preset = AgentPresets.getPreset(agentType)
+        return preset?.systemPrompt
+    }
+    // Otherwise use custom system prompt
+    return customSystemPrompt
 }
 
 fun Route.chatRoutes() {
@@ -230,6 +241,10 @@ fun Route.chatRoutes() {
                         request.language?.let { lang -> it[language] = lang }
                         request.includeExamples?.let { examples -> it[includeExamples] = examples }
                         request.contentFormat?.let { format -> it[contentFormat] = format }
+
+                        // Agent settings
+                        request.agentType?.let { type -> it[agentType] = type }
+                        request.agentGoalAchieved?.let { achieved -> it[agentGoalAchieved] = achieved }
                     } > 0
                 }
 
@@ -400,11 +415,14 @@ fun Route.chatRoutes() {
 
                 // Call AI service
                 val provider = chat[Chats.provider]
+                val agentType = chat[Chats.agentType]
+                val effectiveSystemPrompt = getEffectiveSystemPrompt(agentType, chat[Chats.systemPrompt])
+
                 val parameters = AIService.AIParameters(
                     temperature = chat[Chats.temperature],
                     maxTokens = chat[Chats.maxTokens],
                     topP = chat[Chats.topP],
-                    systemPrompt = chat[Chats.systemPrompt],
+                    systemPrompt = effectiveSystemPrompt,
                     responseFormat = chat[Chats.responseFormat],
                     responseSchema = chat[Chats.responseSchema],
                     responseStyle = chat[Chats.responseStyle],
@@ -415,6 +433,14 @@ fun Route.chatRoutes() {
                 )
                 val aiResponse = AIService.sendMessage(provider, allMessages, parameters)
 
+                // Check if agent goal was achieved
+                val goalAchieved = if (agentType != "none") {
+                    val preset = AgentPresets.getPreset(agentType)
+                    preset?.completionMarker?.let { marker ->
+                        aiResponse.contains(marker)
+                    } ?: false
+                } else false
+
                 // Save AI response
                 val assistantMessageId = dbQuery {
                     val msgId = Messages.insert {
@@ -423,9 +449,12 @@ fun Route.chatRoutes() {
                         it[content] = aiResponse
                     }[Messages.id].value
 
-                    // Update chat updatedAt
+                    // Update chat updatedAt and agentGoalAchieved if needed
                     Chats.update({ Chats.id eq chatId }) {
                         it[updatedAt] = org.jetbrains.exposed.sql.javatime.CurrentTimestamp()
+                        if (goalAchieved) {
+                            it[agentGoalAchieved] = true
+                        }
                     }
 
                     msgId
@@ -513,11 +542,14 @@ fun Route.chatRoutes() {
 
                 // Call AI service with streaming
                 val provider = chat[Chats.provider]
+                val agentType = chat[Chats.agentType]
+                val effectiveSystemPrompt = getEffectiveSystemPrompt(agentType, chat[Chats.systemPrompt])
+
                 val parameters = AIService.AIParameters(
                     temperature = chat[Chats.temperature],
                     maxTokens = chat[Chats.maxTokens],
                     topP = chat[Chats.topP],
-                    systemPrompt = chat[Chats.systemPrompt],
+                    systemPrompt = effectiveSystemPrompt,
                     streaming = true,
                     responseFormat = chat[Chats.responseFormat],
                     responseSchema = chat[Chats.responseSchema],
@@ -586,17 +618,29 @@ fun Route.chatRoutes() {
                     }
                 }
 
+                // Check if agent goal was achieved
+                val finalResponse = fullResponse.toString()
+                val goalAchieved = if (agentType != "none") {
+                    val preset = AgentPresets.getPreset(agentType)
+                    preset?.completionMarker?.let { marker ->
+                        finalResponse.contains(marker)
+                    } ?: false
+                } else false
+
                 // Save AI response to database after streaming is complete
                 dbQuery {
                     Messages.insert {
                         it[Messages.chatId] = chatId
                         it[role] = "assistant"
-                        it[content] = fullResponse.toString()
+                        it[content] = finalResponse
                     }
 
-                    // Update chat updatedAt
+                    // Update chat updatedAt and agentGoalAchieved if needed
                     Chats.update({ Chats.id eq chatId }) {
                         it[updatedAt] = org.jetbrains.exposed.sql.javatime.CurrentTimestamp()
+                        if (goalAchieved) {
+                            it[agentGoalAchieved] = true
+                        }
                     }
                 }
             } catch (e: Exception) {
