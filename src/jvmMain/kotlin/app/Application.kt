@@ -137,8 +137,10 @@ fun Application.module() {
         allowHeader(HttpHeaders.ContentType)
 
         // Allow only your frontend domain
-        allowHost("defendend.dev", schemes = listOf("https"))
-        allowHost("www.defendend.dev", schemes = listOf("https"))
+        val domain = System.getenv("APP_DOMAIN")
+            ?: throw IllegalStateException("APP_DOMAIN environment variable must be set!")
+        allowHost(domain, schemes = listOf("https"))
+        allowHost("www.$domain", schemes = listOf("https"))
 
         // For local development
         val isDevelopment = System.getenv("ENVIRONMENT") != "production"

@@ -11,10 +11,14 @@ import io.ktor.server.response.*
  */
 object CsrfProtection {
 
-    private val allowedOrigins = setOf(
-        "https://defendend.dev",
-        "https://www.defendend.dev"
-    )
+    private val allowedOrigins: Set<String> by lazy {
+        val domain = System.getenv("APP_DOMAIN")
+            ?: throw IllegalStateException("APP_DOMAIN environment variable must be set!")
+        setOf(
+            "https://$domain",
+            "https://www.$domain"
+        )
+    }
 
     // For development
     private val developmentOrigins = setOf(
