@@ -637,6 +637,43 @@ class ChatUI {
         }
     }
 
+    /**
+     * Create copy button for message
+     */
+    private fun createCopyButton(content: String): HTMLButtonElement {
+        val copyBtn = document.createElement("button") as HTMLButtonElement
+        copyBtn.className = "copy-message-btn"
+        copyBtn.innerHTML = "📋" // Copy icon
+        copyBtn.title = "Copy message"
+
+        copyBtn.onclick = {
+            // Copy to clipboard
+            window.navigator.clipboard.writeText(content).then(
+                {
+                    // Show success feedback
+                    copyBtn.innerHTML = "✓"
+                    copyBtn.classList.add("copied")
+
+                    // Reset after 2 seconds
+                    window.setTimeout({
+                        copyBtn.innerHTML = "📋"
+                        copyBtn.classList.remove("copied")
+                    }, 2000)
+                },
+                { error ->
+                    console.error("Failed to copy:", error)
+                    copyBtn.innerHTML = "✗"
+                    window.setTimeout({
+                        copyBtn.innerHTML = "📋"
+                    }, 2000)
+                }
+            )
+            null
+        }
+
+        return copyBtn
+    }
+
     private fun displayMessage(message: LocalMessage) {
         val messageDiv = document.createElement("div") as HTMLDivElement
         messageDiv.className = "message ${message.role}"
@@ -666,6 +703,10 @@ class ChatUI {
         } else {
             contentDiv.textContent = message.content
         }
+
+        // Add copy button
+        val copyBtn = createCopyButton(message.content)
+        messageDiv.appendChild(copyBtn)
 
         messageDiv.appendChild(avatar)
         messageDiv.appendChild(contentDiv)
@@ -1009,6 +1050,10 @@ class ChatUI {
         val contentDiv = document.createElement("div") as HTMLDivElement
         contentDiv.className = "message-content"
         contentDiv.textContent = message.content
+
+        // Add copy button
+        val copyBtn = createCopyButton(message.content)
+        messageDiv.appendChild(copyBtn)
 
         messageDiv.appendChild(avatar)
         messageDiv.appendChild(contentDiv)
