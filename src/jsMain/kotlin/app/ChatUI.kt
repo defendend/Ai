@@ -541,8 +541,30 @@ class ChatUI {
                             sendBtn.disabled = false
                             isSending = false
 
-                            // Apply markdown rendering to final complete text
-                            contentDiv?.innerHTML = renderMarkdown(assistantMessage.content)
+                            // Normalize streaming text before rendering
+                            // AI doesn't send newlines before headers during streaming
+                            val normalizedContent = assistantMessage.content
+                                .replace(Regex("([^\\n])(#{1,4} )"), "$1\n\n$2")
+
+                            // Apply same formatting logic as displayMessage()
+                            if (contentDiv != null) {
+                                val formattedAgentGoal = formatAgentGoalCompletion(normalizedContent)
+                                val formattedJson = if (formattedAgentGoal == null) formatJsonResponse(normalizedContent) else null
+                                val formattedXml = if (formattedAgentGoal == null && formattedJson == null) formatXmlResponse(normalizedContent) else null
+                                val formattedHtml = if (formattedAgentGoal == null && formattedJson == null && formattedXml == null) formatHtmlResponse(normalizedContent) else null
+
+                                contentDiv.innerHTML = when {
+                                    formattedAgentGoal != null -> formattedAgentGoal
+                                    formattedJson != null -> formattedJson
+                                    formattedXml != null -> formattedXml
+                                    formattedHtml != null -> formattedHtml
+                                    else -> renderMarkdown(normalizedContent)
+                                }
+
+                                // Recreate copy button after formatting (innerHTML removes it)
+                                val copyBtn = createCopyButton(contentDiv)
+                                contentDiv.appendChild(copyBtn)
+                            }
 
                             // Update chat title from first message
                             if (currentMessages.size <= 2) {
