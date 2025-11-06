@@ -705,12 +705,12 @@ class ChatUI {
             contentDiv.textContent = message.content
         }
 
+        // Add copy button inside contentDiv
+        val copyBtn = createCopyButton(contentDiv)
+        contentDiv.appendChild(copyBtn)
+
         messageDiv.appendChild(avatar)
         messageDiv.appendChild(contentDiv)
-
-        // Add copy button (after contentDiv is created)
-        val copyBtn = createCopyButton(contentDiv)
-        messageDiv.appendChild(copyBtn)
 
         messagesContainer.appendChild(messageDiv)
         messagesContainer.scrollTop = messagesContainer.scrollHeight.toDouble()
@@ -1052,12 +1052,12 @@ class ChatUI {
         contentDiv.className = "message-content"
         contentDiv.textContent = message.content
 
+        // Add copy button inside contentDiv
+        val copyBtn = createCopyButton(contentDiv)
+        contentDiv.appendChild(copyBtn)
+
         messageDiv.appendChild(avatar)
         messageDiv.appendChild(contentDiv)
-
-        // Add copy button (after contentDiv is created)
-        val copyBtn = createCopyButton(contentDiv)
-        messageDiv.appendChild(copyBtn)
 
         messagesContainer.appendChild(messageDiv)
         scrollToBottom()
