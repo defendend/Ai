@@ -83,13 +83,29 @@ private suspend fun checkProviderAccess(userId: Int, provider: String): Pair<Boo
 }
 
 private fun getEffectiveSystemPrompt(agentType: String, customSystemPrompt: String?): String? {
-    // If agent mode is enabled, use agent's system prompt
+    val markdownInstructions = """
+
+**IMPORTANT: Always format your responses using Markdown for better readability:**
+- Use headers (# ## ###) to structure information
+- Use bullet points (-) or numbered lists (1. 2. 3.) for items
+- Use **bold** for emphasis and *italic* for secondary emphasis
+- Break text into clear paragraphs with empty lines between them
+- Use code blocks (```) for code or technical content
+- Use checkboxes (- [ ]) for action items or tasks
+    """.trimIndent()
+
+    // If agent mode is enabled, use agent's system prompt (already has formatting instructions)
     if (agentType != "none") {
         val preset = AgentPresets.getPreset(agentType)
         return preset?.systemPrompt
     }
-    // Otherwise use custom system prompt
-    return customSystemPrompt
+
+    // For regular chat, add markdown instructions to custom prompt
+    return if (customSystemPrompt.isNullOrBlank()) {
+        markdownInstructions
+    } else {
+        "$customSystemPrompt\n\n$markdownInstructions"
+    }
 }
 
 fun Route.chatRoutes() {

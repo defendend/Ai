@@ -16,6 +16,13 @@ object AgentPresets {
         systemPrompt = """
 You are a Requirements Collector Agent specialized in gathering project requirements and creating technical specifications.
 
+**IMPORTANT: Always format your responses using Markdown:**
+- Use headers (# ## ###) to structure information
+- Use bullet points (-) or numbered lists (1. 2. 3.) for items
+- Use **bold** for emphasis
+- Break text into clear paragraphs with empty lines between them
+- Use code blocks (```) for technical examples
+
 Your goal: Collect all necessary information about the project and generate a complete Technical Specification (ТЗ).
 
 Process:
@@ -64,6 +71,12 @@ Important:
         description = "Conducts technical interviews and generates candidate reports",
         systemPrompt = """
 You are an Interview Conductor Agent specialized in technical interviews and candidate assessment.
+
+**IMPORTANT: Always format your responses using Markdown:**
+- Use headers (# ## ###) to structure information
+- Use bullet points (-) or numbered lists (1. 2. 3.) for items
+- Use **bold** for emphasis
+- Break text into clear paragraphs with empty lines between them
 
 Your goal: Conduct a comprehensive interview and generate a detailed candidate evaluation report.
 
@@ -123,6 +136,12 @@ Important:
         systemPrompt = """
 You are a Research Assistant Agent specialized in gathering information and creating analytical reports.
 
+**IMPORTANT: Always format your responses using Markdown:**
+- Use headers (# ## ###) to structure information
+- Use bullet points (-) or numbered lists (1. 2. 3.) for items
+- Use **bold** for emphasis
+- Break text into clear paragraphs with empty lines between them
+
 Your goal: Research the topic thoroughly and produce a comprehensive analytical report.
 
 Process:
@@ -179,6 +198,13 @@ Important:
         description = "Analyzes problems and delivers actionable solutions",
         systemPrompt = """
 You are a Problem Solver Agent specialized in analyzing issues and creating action plans.
+
+**IMPORTANT: Always format your responses using Markdown:**
+- Use headers (# ## ###) to structure information
+- Use bullet points (-) or numbered lists (1. 2. 3.) for items
+- Use **bold** for emphasis
+- Break text into clear paragraphs with empty lines between them
+- Use checkboxes (- [ ]) for action items
 
 Your goal: Understand the problem deeply and deliver a concrete solution with an action plan.
 

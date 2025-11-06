@@ -658,7 +658,7 @@ class ChatUI {
                 formattedJson != null -> contentDiv.innerHTML = formattedJson
                 formattedXml != null -> contentDiv.innerHTML = formattedXml
                 formattedHtml != null -> contentDiv.innerHTML = formattedHtml
-                else -> contentDiv.textContent = message.content
+                else -> contentDiv.innerHTML = renderMarkdown(message.content)
             }
         } else {
             contentDiv.textContent = message.content
@@ -827,8 +827,9 @@ class ChatUI {
                 return null
             }
 
-            // Extract the goal result (between markers)
+            // Extract the goal result (between markers) and render as markdown
             val goalResult = content.substring(startIdx + marker.length, endIdx).trim()
+            val renderedGoal = renderMarkdown(goalResult)
 
             // Build HTML with special styling
             """
@@ -837,13 +838,151 @@ class ChatUI {
                     <span style="font-size: 24px; margin-right: 8px;">🎯</span>
                     <h3 style="margin: 0; color: #2e7d32; font-weight: 600;">Goal Achieved - Final Result</h3>
                 </div>
-                <div style="background: white; border-radius: 6px; padding: 16px; white-space: pre-wrap; font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.6; color: #333;">$goalResult</div>
+                <div style="background: white; border-radius: 6px; padding: 16px; font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.6; color: #333;">$renderedGoal</div>
             </div>
             """.trimIndent()
         } catch (e: Exception) {
             console.log("Agent goal formatting error:", e.message)
             null
         }
+    }
+
+    /**
+     * Render markdown text to HTML
+     */
+    private fun renderMarkdown(text: String): String {
+        var html = text
+            // Escape HTML first
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+
+        // Code blocks (```code```)
+        html = html.replace(Regex("```([\\s\\S]*?)```")) { match ->
+            val code = match.groupValues[1].trim()
+            "<pre style='background: #f5f5f5; padding: 12px; border-radius: 6px; overflow-x: auto; margin: 12px 0;'><code>$code</code></pre>"
+        }
+
+        // Inline code (`code`)
+        html = html.replace(Regex("`([^`]+)`")) { match ->
+            "<code style='background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-family: monospace;'>${match.groupValues[1]}</code>"
+        }
+
+        // Bold (**text** or __text__)
+        html = html.replace(Regex("\\*\\*(.+?)\\*\\*")) { match ->
+            "<strong>${match.groupValues[1]}</strong>"
+        }
+        html = html.replace(Regex("__(.+?)__")) { match ->
+            "<strong>${match.groupValues[1]}</strong>"
+        }
+
+        // Italic (*text* or _text_)
+        html = html.replace(Regex("\\*(.+?)\\*")) { match ->
+            "<em>${match.groupValues[1]}</em>"
+        }
+        html = html.replace(Regex("_(.+?)_")) { match ->
+            "<em>${match.groupValues[1]}</em>"
+        }
+
+        // Headers (# ## ### ####)
+        html = html.split("\n").joinToString("\n") { line ->
+            when {
+                line.startsWith("#### ") -> "<h4 style='margin: 16px 0 8px 0; font-size: 1.1em;'>${line.substring(5)}</h4>"
+                line.startsWith("### ") -> "<h3 style='margin: 18px 0 10px 0; font-size: 1.3em;'>${line.substring(4)}</h3>"
+                line.startsWith("## ") -> "<h2 style='margin: 20px 0 12px 0; font-size: 1.5em;'>${line.substring(3)}</h2>"
+                line.startsWith("# ") -> "<h1 style='margin: 24px 0 14px 0; font-size: 1.8em;'>${line.substring(2)}</h1>"
+                else -> line
+            }
+        }
+
+        // Unordered lists and checkboxes (- * + or - [ ] - [x])
+        val lines = html.split("\n").toMutableList()
+        var inList = false
+        var i = 0
+        while (i < lines.size) {
+            val line = lines[i]
+            val trimmed = line.trim()
+
+            // Checkbox (- [ ] or - [x])
+            if (trimmed.matches(Regex("^- \\[([ x])\\] .+"))) {
+                val checked = trimmed[4] == 'x'
+                val content = trimmed.substring(7)
+                val checkbox = if (checked) "☑" else "☐"
+                if (!inList) {
+                    lines[i] = "<ul style='margin: 8px 0; padding-left: 24px; list-style: none;'><li>$checkbox $content</li>"
+                    inList = true
+                } else {
+                    lines[i] = "<li>$checkbox $content</li>"
+                }
+            }
+            // Regular list item
+            else if (trimmed.matches(Regex("^[-*+] .+"))) {
+                val content = trimmed.substring(2)
+                if (!inList) {
+                    lines[i] = "<ul style='margin: 8px 0; padding-left: 24px;'><li>$content</li>"
+                    inList = true
+                } else {
+                    lines[i] = "<li>$content</li>"
+                }
+            } else if (inList && trimmed.isEmpty()) {
+                lines[i] = "</ul>$line"
+                inList = false
+            } else if (inList) {
+                lines[i - 1] = lines[i - 1] + "</ul>"
+                inList = false
+            }
+            i++
+        }
+        if (inList && lines.isNotEmpty()) {
+            lines[lines.size - 1] = lines[lines.size - 1] + "</ul>"
+        }
+        html = lines.joinToString("\n")
+
+        // Ordered lists (1. 2. 3.)
+        val orderedLines = html.split("\n").toMutableList()
+        var inOrderedList = false
+        var j = 0
+        while (j < orderedLines.size) {
+            val line = orderedLines[j]
+            val trimmed = line.trim()
+
+            if (trimmed.matches(Regex("^\\d+\\. .+"))) {
+                val content = trimmed.substring(trimmed.indexOf(". ") + 2)
+                if (!inOrderedList) {
+                    orderedLines[j] = "<ol style='margin: 8px 0; padding-left: 24px;'><li>$content</li>"
+                    inOrderedList = true
+                } else {
+                    orderedLines[j] = "<li>$content</li>"
+                }
+            } else if (inOrderedList && trimmed.isEmpty()) {
+                orderedLines[j] = "</ol>$line"
+                inOrderedList = false
+            } else if (inOrderedList) {
+                orderedLines[j - 1] = orderedLines[j - 1] + "</ol>"
+                inOrderedList = false
+            }
+            j++
+        }
+        if (inOrderedList && orderedLines.isNotEmpty()) {
+            orderedLines[orderedLines.size - 1] = orderedLines[orderedLines.size - 1] + "</ol>"
+        }
+        html = orderedLines.joinToString("\n")
+
+        // Paragraphs (double newline)
+        html = html.split("\n\n").joinToString("") { paragraph ->
+            val trimmed = paragraph.trim()
+            if (trimmed.isEmpty() || trimmed.startsWith("<h") || trimmed.startsWith("<ul") ||
+                trimmed.startsWith("<ol") || trimmed.startsWith("<pre")) {
+                trimmed
+            } else {
+                "<p style='margin: 8px 0; line-height: 1.6;'>$trimmed</p>"
+            }
+        }
+
+        // Single newlines to <br>
+        html = html.replace("\n", "<br>")
+
+        return html
     }
 
     private fun scrollToBottom() {
