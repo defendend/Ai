@@ -954,11 +954,13 @@ class ChatUI {
                 } else {
                     orderedLines[j] = "<li>$content</li>"
                 }
-            } else if (inOrderedList && trimmed.isEmpty()) {
-                orderedLines[j] = "</ol>$line"
-                inOrderedList = false
             } else if (inOrderedList) {
-                orderedLines[j - 1] = orderedLines[j - 1] + "</ol>"
+                // Close list before current line
+                if (trimmed.isEmpty()) {
+                    orderedLines[j] = "</ol>\n$line"
+                } else {
+                    orderedLines[j] = "</ol>\n$line"
+                }
                 inOrderedList = false
             }
             j++

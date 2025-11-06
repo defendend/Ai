@@ -86,12 +86,14 @@ private fun getEffectiveSystemPrompt(agentType: String, customSystemPrompt: Stri
     val markdownInstructions = """
 
 **IMPORTANT: Always format your responses using Markdown for better readability:**
-- Use headers (# ## ###) to structure information
-- Use bullet points (-) or numbered lists (1. 2. 3.) for items
+- Use headers (## ### ####) to structure sections and categories
+- Use numbered lists (1. 2. 3.) ONLY for sequential steps within ONE section
+- Use bullet points (-) for non-sequential items or multiple unrelated points
 - Use **bold** for emphasis and *italic* for secondary emphasis
 - Break text into clear paragraphs with empty lines between them
 - Use code blocks (```) for code or technical content
 - Use checkboxes (- [ ]) for action items or tasks
+- NEVER use "1. 1. 1." for different sections - use headers (### Section Name) instead
     """.trimIndent()
 
     // If agent mode is enabled, use agent's system prompt (already has formatting instructions)
