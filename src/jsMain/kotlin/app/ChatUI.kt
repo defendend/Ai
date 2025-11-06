@@ -640,15 +640,16 @@ class ChatUI {
     /**
      * Create copy button for message
      */
-    private fun createCopyButton(content: String): HTMLButtonElement {
+    private fun createCopyButton(contentElement: HTMLElement): HTMLButtonElement {
         val copyBtn = document.createElement("button") as HTMLButtonElement
         copyBtn.className = "copy-message-btn"
         copyBtn.innerHTML = "📋" // Copy icon
         copyBtn.title = "Copy message"
 
         copyBtn.onclick = {
-            // Copy to clipboard
-            window.navigator.clipboard.writeText(content).then(
+            // Copy text content from DOM element (not HTML)
+            val textToCopy = contentElement.textContent ?: ""
+            window.navigator.clipboard.writeText(textToCopy).then(
                 {
                     // Show success feedback
                     copyBtn.innerHTML = "✓"
@@ -704,12 +705,12 @@ class ChatUI {
             contentDiv.textContent = message.content
         }
 
-        // Add copy button
-        val copyBtn = createCopyButton(message.content)
-        messageDiv.appendChild(copyBtn)
-
         messageDiv.appendChild(avatar)
         messageDiv.appendChild(contentDiv)
+
+        // Add copy button (after contentDiv is created)
+        val copyBtn = createCopyButton(contentDiv)
+        messageDiv.appendChild(copyBtn)
 
         messagesContainer.appendChild(messageDiv)
         messagesContainer.scrollTop = messagesContainer.scrollHeight.toDouble()
@@ -1051,12 +1052,12 @@ class ChatUI {
         contentDiv.className = "message-content"
         contentDiv.textContent = message.content
 
-        // Add copy button
-        val copyBtn = createCopyButton(message.content)
-        messageDiv.appendChild(copyBtn)
-
         messageDiv.appendChild(avatar)
         messageDiv.appendChild(contentDiv)
+
+        // Add copy button (after contentDiv is created)
+        val copyBtn = createCopyButton(contentDiv)
+        messageDiv.appendChild(copyBtn)
 
         messagesContainer.appendChild(messageDiv)
         scrollToBottom()
