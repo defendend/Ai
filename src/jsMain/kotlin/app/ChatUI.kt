@@ -541,29 +541,49 @@ class ChatUI {
                             sendBtn.disabled = false
                             isSending = false
 
-                            // Normalize streaming text before rendering
-                            // AI doesn't send newlines before headers during streaming
-                            val normalizedContent = assistantMessage.content
-                                .replace(Regex("([^\\n])(#{1,4} )"), "$1\n\n$2")
+                            // Reload message from DB to get properly formatted content
+                            // DB saves text with correct newlines, streaming doesn't
+                            scope.launch {
+                                val result = apiClient.getChatWithMessages(chatId)
+                                result.fold(
+                                    onSuccess = { messages ->
+                                        // Get last assistant message from DB
+                                        val lastAssistantMsg = messages.lastOrNull { it.role == "assistant" }
+                                        if (lastAssistantMsg != null && contentDiv != null) {
+                                            // Update local message with DB content
+                                            assistantMessage.content = lastAssistantMsg.content
 
-                            // Apply same formatting logic as displayMessage()
-                            if (contentDiv != null) {
-                                val formattedAgentGoal = formatAgentGoalCompletion(normalizedContent)
-                                val formattedJson = if (formattedAgentGoal == null) formatJsonResponse(normalizedContent) else null
-                                val formattedXml = if (formattedAgentGoal == null && formattedJson == null) formatXmlResponse(normalizedContent) else null
-                                val formattedHtml = if (formattedAgentGoal == null && formattedJson == null && formattedXml == null) formatHtmlResponse(normalizedContent) else null
+                                            // Apply same formatting logic as displayMessage()
+                                            val formattedAgentGoal = formatAgentGoalCompletion(lastAssistantMsg.content)
+                                            val formattedJson = if (formattedAgentGoal == null) formatJsonResponse(lastAssistantMsg.content) else null
+                                            val formattedXml = if (formattedAgentGoal == null && formattedJson == null) formatXmlResponse(lastAssistantMsg.content) else null
+                                            val formattedHtml = if (formattedAgentGoal == null && formattedJson == null && formattedXml == null) formatHtmlResponse(lastAssistantMsg.content) else null
 
-                                contentDiv.innerHTML = when {
-                                    formattedAgentGoal != null -> formattedAgentGoal
-                                    formattedJson != null -> formattedJson
-                                    formattedXml != null -> formattedXml
-                                    formattedHtml != null -> formattedHtml
-                                    else -> renderMarkdown(normalizedContent)
-                                }
+                                            contentDiv.innerHTML = when {
+                                                formattedAgentGoal != null -> formattedAgentGoal
+                                                formattedJson != null -> formattedJson
+                                                formattedXml != null -> formattedXml
+                                                formattedHtml != null -> formattedHtml
+                                                else -> renderMarkdown(lastAssistantMsg.content)
+                                            }
 
-                                // Recreate copy button after formatting (innerHTML removes it)
-                                val copyBtn = createCopyButton(contentDiv)
-                                contentDiv.appendChild(copyBtn)
+                                            // Recreate copy button after formatting (innerHTML removes it)
+                                            val copyBtn = createCopyButton(contentDiv)
+                                            contentDiv.appendChild(copyBtn)
+                                        }
+                                    },
+                                    onFailure = { error ->
+                                        console.error("Failed to reload message from DB:", error)
+                                        // Fallback: use streamed content with normalization
+                                        if (contentDiv != null) {
+                                            val normalizedContent = assistantMessage.content
+                                                .replace(Regex("([^\\n])(#{1,4} )"), "$1\n\n$2")
+                                            contentDiv.innerHTML = renderMarkdown(normalizedContent)
+                                            val copyBtn = createCopyButton(contentDiv)
+                                            contentDiv.appendChild(copyBtn)
+                                        }
+                                    }
+                                )
                             }
 
                             // Update chat title from first message
