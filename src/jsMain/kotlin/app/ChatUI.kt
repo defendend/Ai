@@ -860,7 +860,7 @@ class ChatUI {
         // Code blocks (```code```)
         html = html.replace(Regex("```([\\s\\S]*?)```")) { match ->
             val code = match.groupValues[1].trim()
-            "<pre style='background: #f5f5f5; padding: 12px; border-radius: 6px; overflow-x: auto; margin: 12px 0;'><code>$code</code></pre>"
+            "<pre style='background: #f5f5f5; padding: 12px; border-radius: 6px; overflow-x: auto; margin: 8px 0;'><code>$code</code></pre>"
         }
 
         // Inline code (`code`)
@@ -887,10 +887,10 @@ class ChatUI {
         // Headers (# ## ### ####)
         html = html.split("\n").joinToString("\n") { line ->
             when {
-                line.startsWith("#### ") -> "<h4 style='margin: 16px 0 8px 0; font-size: 1.1em;'>${line.substring(5)}</h4>"
-                line.startsWith("### ") -> "<h3 style='margin: 18px 0 10px 0; font-size: 1.3em;'>${line.substring(4)}</h3>"
-                line.startsWith("## ") -> "<h2 style='margin: 20px 0 12px 0; font-size: 1.5em;'>${line.substring(3)}</h2>"
-                line.startsWith("# ") -> "<h1 style='margin: 24px 0 14px 0; font-size: 1.8em;'>${line.substring(2)}</h1>"
+                line.startsWith("#### ") -> "<h4 style='margin: 10px 0 6px 0; font-size: 1.1em;'>${line.substring(5)}</h4>"
+                line.startsWith("### ") -> "<h3 style='margin: 12px 0 6px 0; font-size: 1.3em;'>${line.substring(4)}</h3>"
+                line.startsWith("## ") -> "<h2 style='margin: 14px 0 8px 0; font-size: 1.4em;'>${line.substring(3)}</h2>"
+                line.startsWith("# ") -> "<h1 style='margin: 16px 0 10px 0; font-size: 1.6em;'>${line.substring(2)}</h1>"
                 else -> line
             }
         }
@@ -909,7 +909,7 @@ class ChatUI {
                 val content = trimmed.substring(7)
                 val checkbox = if (checked) "☑" else "☐"
                 if (!inList) {
-                    lines[i] = "<ul style='margin: 8px 0; padding-left: 24px; list-style: none;'><li>$checkbox $content</li>"
+                    lines[i] = "<ul style='margin: 6px 0; padding-left: 24px; list-style: none;'><li>$checkbox $content</li>"
                     inList = true
                 } else {
                     lines[i] = "<li>$checkbox $content</li>"
@@ -919,7 +919,7 @@ class ChatUI {
             else if (trimmed.matches(Regex("^[-*+] .+"))) {
                 val content = trimmed.substring(2)
                 if (!inList) {
-                    lines[i] = "<ul style='margin: 8px 0; padding-left: 24px;'><li>$content</li>"
+                    lines[i] = "<ul style='margin: 6px 0; padding-left: 24px;'><li>$content</li>"
                     inList = true
                 } else {
                     lines[i] = "<li>$content</li>"
@@ -949,7 +949,7 @@ class ChatUI {
             if (trimmed.matches(Regex("^\\d+\\. .+"))) {
                 val content = trimmed.substring(trimmed.indexOf(". ") + 2)
                 if (!inOrderedList) {
-                    orderedLines[j] = "<ol style='margin: 8px 0; padding-left: 24px;'><li>$content</li>"
+                    orderedLines[j] = "<ol style='margin: 6px 0; padding-left: 24px;'><li>$content</li>"
                     inOrderedList = true
                 } else {
                     orderedLines[j] = "<li>$content</li>"
@@ -975,12 +975,16 @@ class ChatUI {
                 trimmed.startsWith("<ol") || trimmed.startsWith("<pre")) {
                 trimmed
             } else {
-                "<p style='margin: 8px 0; line-height: 1.6;'>$trimmed</p>"
+                "<p style='margin: 4px 0; line-height: 1.5;'>$trimmed</p>"
             }
         }
 
-        // Single newlines to <br>
-        html = html.replace("\n", "<br>")
+        // Single newlines to <br>, but not adjacent to block elements
+        html = html.replace(Regex("\n(?!</?(h[1-4]|ul|ol|li|pre|p))"), "<br>")
+
+        // Clean up extra <br> tags around block elements
+        html = html.replace(Regex("<br>\\s*</(h[1-4]|ul|ol|li|p)>"), "</$1>")
+        html = html.replace(Regex("<(h[1-4]|ul|ol|li|p)[^>]*>\\s*<br>"), "<$1>")
 
         return html
     }
