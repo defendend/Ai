@@ -307,7 +307,7 @@ body.login-page {
 /* Copy button */
 .copy-message-btn {
     position: absolute;
-    top: 8px;
+    bottom: 8px;
     right: 8px;
     width: 32px;
     height: 32px;
@@ -343,8 +343,6 @@ body.login-page {
 }
 
 .message.user .copy-message-btn {
-    right: auto;
-    left: 8px;
     background: rgba(255, 255, 255, 0.2);
     color: white;
 }
