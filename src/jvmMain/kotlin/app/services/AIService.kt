@@ -554,19 +554,24 @@ $expertsAnswers
 - Выделить сильные стороны каждого подхода
 - Синтезировать финальное решение, объединяющее лучшие идеи
 
-Формат ответа:
-$expertsAnswers
-
----
+Дай только итоговое решение модератора. Формат:
 ### Итоговое решение (Модератор)
 [Синтез лучших идей от всех экспертов]
         """.trimIndent()
 
-        return sendMessage(
+        val moderatorAnswer = sendMessage(
             provider,
             listOf(Message(role = "user", content = moderatorPrompt)),
-            parameters.copy(maxTokens = parameters.maxTokens ?: 4096)
+            parameters.copy(maxTokens = parameters.maxTokens ?: 1536)
         )
+
+        // Combine expert answers with moderator synthesis
+        return """
+$expertsAnswers
+
+---
+$moderatorAnswer
+        """.trimIndent()
     }
 
     /**
@@ -668,10 +673,7 @@ $allExpertsText
 - Синтезировать финальное решение, объединяющее лучшие идеи
 - Дать конкретные рекомендации
 
-Формат ответа:
-$allExpertsText
-
----
+Дай только итоговое решение модератора. Формат:
 ### Итоговое решение (Модератор)
 
 **Анализ подходов:**
@@ -684,11 +686,19 @@ $allExpertsText
 [Конкретные шаги к реализации]
         """.trimIndent()
 
-        return sendMessage(
+        val moderatorAnswer = sendMessage(
             provider,
             listOf(Message(role = "user", content = moderatorPrompt)),
-            parameters.copy(maxTokens = parameters.maxTokens ?: 4096)
+            parameters.copy(maxTokens = parameters.maxTokens ?: 2048)
         )
+
+        // Combine all expert answers with moderator synthesis
+        return """
+$allExpertsText
+
+---
+$moderatorAnswer
+        """.trimIndent()
     }
 
     /**
