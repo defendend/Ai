@@ -497,7 +497,7 @@ object AIService {
         return sendMessage(
             provider,
             listOf(Message(role = "user", content = expertPanelPrompt)),
-            parameters.copy(maxTokens = parameters.maxTokens ?: 40960)
+            parameters.copy(maxTokens = parameters.maxTokens ?: 8192)
         )
     }
 
@@ -537,7 +537,7 @@ object AIService {
         val expertsAnswers = sendMessage(
             provider,
             listOf(Message(role = "user", content = expertsPrompt)),
-            parameters.copy(maxTokens = parameters.maxTokens ?: 40960)
+            parameters.copy(maxTokens = parameters.maxTokens ?: 8192)
         )
 
         // Step 2: Moderator synthesizes the answers
@@ -689,7 +689,7 @@ $allExpertsText
         val moderatorAnswer = sendMessage(
             provider,
             listOf(Message(role = "user", content = moderatorPrompt)),
-            parameters.copy(maxTokens = parameters.maxTokens ?: 16384)
+            parameters.copy(maxTokens = parameters.maxTokens ?: 8192)
         )
 
         // Combine all expert answers with moderator synthesis
