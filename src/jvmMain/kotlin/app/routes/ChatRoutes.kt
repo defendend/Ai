@@ -702,7 +702,7 @@ fun Route.chatRoutes() {
                         "direct" -> "Direct Answer" to "Прямой ответ без дополнительных инструкций"
                         "single" -> "Expert Panel - Single Request" to "Все эксперты + модератор в одном AI запросе (быстро, но менее глубоко)"
                         "two" -> "Expert Panel - Two Requests" to "Эксперты в одном запросе, модератор в отдельном (баланс скорости и качества)"
-                        "chain" -> "Expert Panel - Chain" to "Каждый эксперт отдельно + валидация + модератор (медленно, но максимально качественно)"
+                        "chain" -> "Expert Panel - Chain" to "Каждый эксперт отдельно + модератор (медленно, но более независимые мнения)"
                         else -> throw IllegalArgumentException("Unknown approach: ${request.approach}")
                     }
 
@@ -785,7 +785,7 @@ fun Route.chatRoutes() {
                             ),
                             ReasoningApproachResult(
                                 name = "Expert Panel - Chain",
-                                description = "Каждый эксперт отдельно + валидация + модератор (медленно, но максимально качественно)",
+                                description = "Каждый эксперт отдельно + модератор (медленно, но более независимые мнения)",
                                 answer = result.expertPanelChain
                             )
                         )

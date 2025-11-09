@@ -399,7 +399,7 @@ object AIService {
                 async {
                     sendMessageWithExpertPanelTwoRequests(provider, task, parameters)
                 },
-                // 4. Expert panel - chain (each expert separate + validation + moderator)
+                // 4. Expert panel - chain (each expert separate + moderator)
                 async {
                     sendMessageWithExpertPanelChain(provider, task, parameters)
                 }
@@ -576,7 +576,7 @@ $moderatorAnswer
 
     /**
      * Approach 4: Expert panel - chain
-     * Each expert as separate request + validation + moderator synthesis
+     * Each expert as separate request + moderator synthesis
      */
     private suspend fun sendMessageWithExpertPanelChain(
         provider: String,
@@ -635,32 +635,8 @@ $moderatorAnswer
                         parameters.copy(maxTokens = 8192, temperature = 0.7)
                     )
 
-                    // Validate expert's answer
-                    val validationPrompt = """
-Проверь следующий ответ эксперта на качество и полноту:
-
-$expertAnswer
-
-Задача была: "$task"
-
-Оцени:
-1. Отвечает ли решение на задачу?
-2. Использует ли эксперт свою специализацию?
-3. Достаточно ли полное решение?
-
-Если ответ качественный, просто верни его как есть.
-Если есть недостатки, верни улучшенную версию с сохранением специализации эксперта.
-                    """.trimIndent()
-
-                    println("[Chain] Step 2.$expertNumber: Validating expert answer...")
-                    val validatedAnswer = sendMessage(
-                        provider,
-                        listOf(Message(role = "user", content = validationPrompt)),
-                        parameters.copy(maxTokens = 8192, temperature = 0.3)
-                    )
-
-                    expertAnswers.add(validatedAnswer)
-                    println("[Chain] Step 2.$expertNumber: Expert answer validated and added")
+                    expertAnswers.add(expertAnswer)
+                    println("[Chain] Step 2.$expertNumber: Expert answer received and added")
                 } catch (e: Exception) {
                     println("[Chain] ERROR in expert $expertNumber: ${e.message}")
                     throw Exception("Failed to process expert $expertNumber ($specialization): ${e.message}", e)
