@@ -9,6 +9,7 @@ import kotlinx.serialization.json.jsonObject
 import org.w3c.dom.get
 import org.w3c.fetch.Headers
 import org.w3c.fetch.RequestInit
+import org.w3c.fetch.Response
 import kotlin.js.json
 import kotlin.js.Promise
 
@@ -128,6 +129,16 @@ data class SingleApproachResponse(
     val answer: String
 )
 
+// Extension function to check auth and redirect if needed
+private fun Response.checkAuthAndRedirect(): Response {
+    if (this.status == 401.toShort()) {
+        console.log("JWT token expired or invalid, redirecting to login...")
+        localStorage.removeItem("jwt_token")
+        window.location.href = "/"
+    }
+    return this
+}
+
 class BackendApiClient {
     private val baseUrl = window.location.origin
     private val json = Json {
@@ -153,7 +164,7 @@ class BackendApiClient {
                     method = "GET",
                     headers = getAuthHeaders()
                 )
-            ).await()
+            ).await().checkAuthAndRedirect()
 
             if (!response.ok) {
                 return Result.failure(Exception("Failed to fetch chats: ${response.statusText}"))
@@ -181,7 +192,7 @@ class BackendApiClient {
                     headers = getAuthHeaders(),
                     body = requestBody
                 )
-            ).await()
+            ).await().checkAuthAndRedirect()
 
             if (!response.ok) {
                 val errorText = response.text().await()
@@ -204,7 +215,7 @@ class BackendApiClient {
                     method = "GET",
                     headers = getAuthHeaders()
                 )
-            ).await()
+            ).await().checkAuthAndRedirect()
 
             if (!response.ok) {
                 val errorText = response.text().await()
@@ -232,7 +243,7 @@ class BackendApiClient {
                     method = "GET",
                     headers = getAuthHeaders()
                 )
-            ).await()
+            ).await().checkAuthAndRedirect()
 
             if (!response.ok) {
                 val errorText = response.text().await()
@@ -263,7 +274,7 @@ class BackendApiClient {
                     headers = getAuthHeaders(),
                     body = requestBody
                 )
-            ).await()
+            ).await().checkAuthAndRedirect()
 
             if (!response.ok) {
                 val errorText = response.text().await()
@@ -284,7 +295,7 @@ class BackendApiClient {
                     method = "DELETE",
                     headers = getAuthHeaders()
                 )
-            ).await()
+            ).await().checkAuthAndRedirect()
 
             if (!response.ok) {
                 val errorText = response.text().await()
@@ -309,7 +320,7 @@ class BackendApiClient {
                     headers = getAuthHeaders(),
                     body = requestBody
                 )
-            ).await()
+            ).await().checkAuthAndRedirect()
 
             if (!response.ok) {
                 val errorText = response.text().await()
@@ -400,7 +411,7 @@ class BackendApiClient {
                     headers = getAuthHeaders(),
                     body = requestBody
                 )
-            ).await()
+            ).await().checkAuthAndRedirect()
 
             if (!response.ok) {
                 val errorText = response.text().await()
@@ -427,7 +438,7 @@ class BackendApiClient {
                     headers = getAuthHeaders(),
                     body = requestBody
                 )
-            ).await()
+            ).await().checkAuthAndRedirect()
 
             if (!response.ok) {
                 val errorText = response.text().await()
@@ -462,7 +473,7 @@ class BackendApiClient {
                     headers = getAuthHeaders(),
                     body = requestBody
                 )
-            ).await()
+            ).await().checkAuthAndRedirect()
 
             if (!response.ok) {
                 val errorText = response.text().await()
@@ -555,7 +566,7 @@ class BackendApiClient {
                     },
                     body = requestBody
                 )
-            ).await()
+            ).await().checkAuthAndRedirect()
 
             if (!response.ok) {
                 val errorText = response.text().await()
@@ -579,7 +590,7 @@ class BackendApiClient {
                     method = "GET",
                     headers = getAuthHeaders()
                 )
-            ).await()
+            ).await().checkAuthAndRedirect()
 
             if (!response.ok) {
                 val errorText = response.text().await()
@@ -608,7 +619,7 @@ class BackendApiClient {
                     headers = getAuthHeaders(),
                     body = requestBody
                 )
-            ).await()
+            ).await().checkAuthAndRedirect()
 
             if (!response.ok) {
                 val errorText = response.text().await()
@@ -634,7 +645,7 @@ class BackendApiClient {
                     headers = getAuthHeaders(),
                     body = requestBody
                 )
-            ).await()
+            ).await().checkAuthAndRedirect()
 
             if (!response.ok) {
                 val errorText = response.text().await()
@@ -657,7 +668,7 @@ class BackendApiClient {
                     method = "DELETE",
                     headers = getAuthHeaders()
                 )
-            ).await()
+            ).await().checkAuthAndRedirect()
 
             if (!response.ok) {
                 val errorText = response.text().await()
@@ -678,7 +689,7 @@ class BackendApiClient {
                     method = "POST",
                     headers = getAuthHeaders()
                 )
-            ).await()
+            ).await().checkAuthAndRedirect()
 
             if (!response.ok) {
                 val errorText = response.text().await()
@@ -705,7 +716,7 @@ class BackendApiClient {
                     headers = getAuthHeaders(),
                     body = requestBody
                 )
-            ).await()
+            ).await().checkAuthAndRedirect()
 
             if (!response.ok) {
                 val errorText = response.text().await()
@@ -734,7 +745,7 @@ class BackendApiClient {
                     headers = getAuthHeaders(),
                     body = requestBody
                 )
-            ).await()
+            ).await().checkAuthAndRedirect()
 
             if (!response.ok) {
                 val errorText = response.text().await()
