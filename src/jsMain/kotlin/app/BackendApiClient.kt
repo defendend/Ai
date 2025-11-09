@@ -112,6 +112,22 @@ data class ReasoningApproachResult(
     val answer: String
 )
 
+@Serializable
+data class SingleApproachRequest(
+    val task: String,
+    val approach: String,
+    val provider: String = "deepseek"
+)
+
+@Serializable
+data class SingleApproachResponse(
+    val task: String,
+    val approach: String,
+    val name: String,
+    val description: String,
+    val answer: String
+)
+
 class BackendApiClient {
     private val baseUrl = window.location.origin
     private val json = Json {
@@ -670,6 +686,35 @@ class BackendApiClient {
             }
 
             Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getSingleApproach(task: String, approach: String, provider: String = "deepseek"): Result<SingleApproachResponse> {
+        return try {
+            val requestBody = json.encodeToString(
+                SingleApproachRequest.serializer(),
+                SingleApproachRequest(task, approach, provider)
+            )
+
+            val response = window.fetch(
+                "$baseUrl/api/chats/single-approach",
+                RequestInit(
+                    method = "POST",
+                    headers = getAuthHeaders(),
+                    body = requestBody
+                )
+            ).await()
+
+            if (!response.ok) {
+                val errorText = response.text().await()
+                return Result.failure(Exception(errorText))
+            }
+
+            val responseText = response.text().await()
+            val result = json.decodeFromString<SingleApproachResponse>(responseText)
+            Result.success(result)
         } catch (e: Exception) {
             Result.failure(e)
         }

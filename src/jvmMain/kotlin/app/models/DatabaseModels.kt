@@ -237,3 +237,19 @@ data class ReasoningApproachResult(
     val description: String,
     val answer: String
 )
+
+@Serializable
+data class SingleApproachRequest(
+    val task: String,
+    val approach: String, // "direct", "single", "two", "chain"
+    val provider: String = "deepseek"
+)
+
+@Serializable
+data class SingleApproachResponse(
+    val task: String,
+    val approach: String,
+    val name: String,
+    val description: String,
+    val answer: String
+)

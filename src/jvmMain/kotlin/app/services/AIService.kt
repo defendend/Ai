@@ -355,6 +355,26 @@ object AIService {
     }
 
     /**
+     * Get single reasoning approach result
+     */
+    suspend fun getSingleApproach(
+        provider: String,
+        task: String,
+        approach: String,
+        parameters: AIParameters = AIParameters()
+    ): String {
+        val baseMessages = listOf(Message(role = "user", content = task))
+
+        return when (approach) {
+            "direct" -> sendMessage(provider, baseMessages, parameters.copy(reasoningMode = "direct"))
+            "single" -> sendMessageWithExpertPanelSingleRequest(provider, task, parameters)
+            "two" -> sendMessageWithExpertPanelTwoRequests(provider, task, parameters)
+            "chain" -> sendMessageWithExpertPanelChain(provider, task, parameters)
+            else -> throw IllegalArgumentException("Unknown approach: $approach")
+        }
+    }
+
+    /**
      * Compare different reasoning approaches for a given task
      */
     suspend fun compareReasoningApproaches(

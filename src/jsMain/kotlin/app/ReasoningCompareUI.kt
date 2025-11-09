@@ -59,33 +59,51 @@ class ReasoningCompareUI {
 
         val provider = providerSelect.value
 
-        scope.launch {
-            compareBtn.disabled = true
-            compareBtn.textContent = "⏳ Сравниваем..."
-            hideError()
-            showLoadingStates()
+        compareBtn.disabled = true
+        compareBtn.textContent = "⏳ Сравниваем..."
+        hideError()
+        showLoadingStates()
 
-            try {
-                val result = apiClient.compareReasoningApproaches(task, provider)
+        // Launch all 4 approaches in parallel
+        val approaches = listOf(
+            "direct" to directContent,
+            "single" to singleContent,
+            "two" to twoContent,
+            "chain" to chainContent
+        )
 
-                result.fold(
-                    onSuccess = { response ->
-                        displayResults(response)
-                        compareBtn.disabled = false
-                        compareBtn.textContent = "🚀 Сравнить подходы"
-                    },
-                    onFailure = { error ->
-                        showError("Ошибка при сравнении подходов: ${error.message}")
-                        hideLoadingStates()
-                        compareBtn.disabled = false
-                        compareBtn.textContent = "🚀 Сравнить подходы"
-                    }
-                )
-            } catch (e: Exception) {
-                showError("Ошибка: ${e.message}")
-                hideLoadingStates()
-                compareBtn.disabled = false
-                compareBtn.textContent = "🚀 Сравнить подходы"
+        var completedCount = 0
+        val totalCount = approaches.size
+
+        approaches.forEach { (approach, content) ->
+            scope.launch {
+                try {
+                    val result = apiClient.getSingleApproach(task, approach, provider)
+
+                    result.fold(
+                        onSuccess = { response ->
+                            // Display this result immediately
+                            val formattedAnswer = renderMarkdown(response.answer)
+                            content.innerHTML = formattedAnswer
+                        },
+                        onFailure = { error ->
+                            content.innerHTML = """
+                                <p style="color: #d32f2f;">❌ Ошибка: ${error.message}</p>
+                            """.trimIndent()
+                        }
+                    )
+                } catch (e: Exception) {
+                    content.innerHTML = """
+                        <p style="color: #d32f2f;">❌ Ошибка: ${e.message}</p>
+                    """.trimIndent()
+                }
+
+                // Update button after all complete
+                completedCount++
+                if (completedCount == totalCount) {
+                    compareBtn.disabled = false
+                    compareBtn.textContent = "🚀 Сравнить подходы"
+                }
             }
         }
     }
@@ -104,24 +122,6 @@ class ReasoningCompareUI {
             content.innerHTML = """
                 <p style="color: #999; font-style: italic;">Результат недоступен</p>
             """.trimIndent()
-        }
-    }
-
-    private fun displayResults(response: CompareReasoningResponse) {
-        response.approaches.forEach { approach ->
-            val content = when (approach.name) {
-                "Direct Answer" -> directContent
-                "Expert Panel - Single Request" -> singleContent
-                "Expert Panel - Two Requests" -> twoContent
-                "Expert Panel - Chain" -> chainContent
-                else -> null
-            }
-
-            if (content != null) {
-                // Render markdown
-                val formattedAnswer = renderMarkdown(approach.answer)
-                content.innerHTML = formattedAnswer
-            }
         }
     }
 

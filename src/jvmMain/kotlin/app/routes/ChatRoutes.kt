@@ -666,6 +666,67 @@ fun Route.chatRoutes() {
             }
         }
 
+            // Get single reasoning approach
+            post("/single-approach") {
+                // CSRF Protection
+                if (!CsrfProtection.isValidRequest(call)) {
+                    call.respond(HttpStatusCode.Forbidden, ErrorResponse("CSRF validation failed"))
+                    return@post
+                }
+
+                val userId = call.getUserId()
+                if (userId == null) {
+                    call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid token"))
+                    return@post
+                }
+
+                try {
+                    val request = call.receive<SingleApproachRequest>()
+
+                    // Check provider access
+                    val (providerAllowed, providerError) = checkProviderAccess(userId, request.provider)
+                    if (!providerAllowed) {
+                        call.respond(HttpStatusCode.Forbidden, ErrorResponse(providerError ?: "Provider access denied"))
+                        return@post
+                    }
+
+                    // Check request limit
+                    val (allowed, error) = checkAndIncrementRequestLimit(userId)
+                    if (!allowed) {
+                        call.respond(HttpStatusCode.TooManyRequests, ErrorResponse(error ?: "Request limit exceeded"))
+                        return@post
+                    }
+
+                    // Get approach metadata
+                    val (name, description) = when (request.approach) {
+                        "direct" -> "Direct Answer" to "Прямой ответ без дополнительных инструкций"
+                        "single" -> "Expert Panel - Single Request" to "Все эксперты + модератор в одном AI запросе (быстро, но менее глубоко)"
+                        "two" -> "Expert Panel - Two Requests" to "Эксперты в одном запросе, модератор в отдельном (баланс скорости и качества)"
+                        "chain" -> "Expert Panel - Chain" to "Каждый эксперт отдельно + валидация + модератор (медленно, но максимально качественно)"
+                        else -> throw IllegalArgumentException("Unknown approach: ${request.approach}")
+                    }
+
+                    // Get single approach result
+                    val answer = AIService.getSingleApproach(
+                        provider = request.provider,
+                        task = request.task,
+                        approach = request.approach
+                    )
+
+                    val response = SingleApproachResponse(
+                        task = request.task,
+                        approach = request.approach,
+                        name = name,
+                        description = description,
+                        answer = answer
+                    )
+
+                    call.respond(response)
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Failed to get approach result: ${e.message}"))
+                }
+            }
+
             // Compare reasoning approaches
             post("/compare-reasoning") {
                 // CSRF Protection
