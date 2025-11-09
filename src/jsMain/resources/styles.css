@@ -186,6 +186,8 @@ body.login-page {
     font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
 }
 
 .header-btn:hover {
