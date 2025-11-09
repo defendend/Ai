@@ -713,19 +713,19 @@ fun Route.chatRoutes() {
                                 answer = result.directAnswer
                             ),
                             ReasoningApproachResult(
-                                name = "Step-by-Step (Chain of Thought)",
-                                description = "Пошаговое решение с рассуждениями",
-                                answer = result.stepByStepAnswer
+                                name = "Expert Panel - Single Request",
+                                description = "Все эксперты + модератор в одном AI запросе (быстро, но менее глубоко)",
+                                answer = result.expertPanelSingleRequest
                             ),
                             ReasoningApproachResult(
-                                name = "Meta-Prompting",
-                                description = "AI сначала создаёт оптимальный промпт, затем решает задачу",
-                                answer = result.metaPromptAnswer
+                                name = "Expert Panel - Two Requests",
+                                description = "Эксперты в одном запросе, модератор в отдельном (баланс скорости и качества)",
+                                answer = result.expertPanelTwoRequests
                             ),
                             ReasoningApproachResult(
-                                name = "Expert Panel",
-                                description = "Группа экспертов с разными специализациями обсуждает решение",
-                                answer = result.expertPanelAnswer
+                                name = "Expert Panel - Chain",
+                                description = "Каждый эксперт отдельно + валидация + модератор (медленно, но максимально качественно)",
+                                answer = result.expertPanelChain
                             )
                         )
                     )

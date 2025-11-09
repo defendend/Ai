@@ -17,9 +17,9 @@ class ReasoningCompareUI {
     private val resultsGrid: HTMLDivElement
 
     private val directContent: HTMLDivElement
-    private val stepContent: HTMLDivElement
-    private val metaContent: HTMLDivElement
-    private val expertContent: HTMLDivElement
+    private val singleContent: HTMLDivElement
+    private val twoContent: HTMLDivElement
+    private val chainContent: HTMLDivElement
 
     init {
         // Get elements
@@ -30,9 +30,9 @@ class ReasoningCompareUI {
         resultsGrid = document.getElementById("resultsGrid") as HTMLDivElement
 
         directContent = document.getElementById("directContent") as HTMLDivElement
-        stepContent = document.getElementById("stepContent") as HTMLDivElement
-        metaContent = document.getElementById("metaContent") as HTMLDivElement
-        expertContent = document.getElementById("expertContent") as HTMLDivElement
+        singleContent = document.getElementById("singleContent") as HTMLDivElement
+        twoContent = document.getElementById("twoContent") as HTMLDivElement
+        chainContent = document.getElementById("chainContent") as HTMLDivElement
 
         // Setup event listeners
         compareBtn.onclick = {
@@ -91,7 +91,7 @@ class ReasoningCompareUI {
     }
 
     private fun showLoadingStates() {
-        listOf(directContent, stepContent, metaContent, expertContent).forEach { content ->
+        listOf(directContent, singleContent, twoContent, chainContent).forEach { content ->
             content.innerHTML = """
                 <div class="loading-spinner"></div>
                 <p style="text-align: center; margin-top: 10px; color: #666;">Загрузка...</p>
@@ -100,7 +100,7 @@ class ReasoningCompareUI {
     }
 
     private fun hideLoadingStates() {
-        listOf(directContent, stepContent, metaContent, expertContent).forEach { content ->
+        listOf(directContent, singleContent, twoContent, chainContent).forEach { content ->
             content.innerHTML = """
                 <p style="color: #999; font-style: italic;">Результат недоступен</p>
             """.trimIndent()
@@ -111,9 +111,9 @@ class ReasoningCompareUI {
         response.approaches.forEach { approach ->
             val content = when (approach.name) {
                 "Direct Answer" -> directContent
-                "Step-by-Step (Chain of Thought)" -> stepContent
-                "Meta-Prompting" -> metaContent
-                "Expert Panel" -> expertContent
+                "Expert Panel - Single Request" -> singleContent
+                "Expert Panel - Two Requests" -> twoContent
+                "Expert Panel - Chain" -> chainContent
                 else -> null
             }
 

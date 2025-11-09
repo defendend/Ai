@@ -69,9 +69,9 @@ object AIService {
     data class ComparisonResult(
         val task: String,
         val directAnswer: String,
-        val stepByStepAnswer: String,
-        val metaPromptAnswer: String,
-        val expertPanelAnswer: String
+        val expertPanelSingleRequest: String,
+        val expertPanelTwoRequests: String,
+        val expertPanelChain: String
     )
 
     suspend fun sendMessage(
@@ -371,17 +371,17 @@ object AIService {
                 async {
                     sendMessage(provider, baseMessages, parameters.copy(reasoningMode = "direct"))
                 },
-                // 2. Step-by-step (Chain of Thought)
+                // 2. Expert panel - single request (all experts + moderator in one call)
                 async {
-                    sendMessage(provider, baseMessages, parameters.copy(reasoningMode = "step_by_step"))
+                    sendMessageWithExpertPanelSingleRequest(provider, task, parameters)
                 },
-                // 3. Meta-prompting: use AI to create a better prompt
+                // 3. Expert panel - two requests (experts in one, moderator in another)
                 async {
-                    sendMessageWithMetaPrompt(provider, task, parameters)
+                    sendMessageWithExpertPanelTwoRequests(provider, task, parameters)
                 },
-                // 4. Expert panel: multiple experts discuss
+                // 4. Expert panel - chain (each expert separate + validation + moderator)
                 async {
-                    sendMessageWithExpertPanel(provider, task, parameters)
+                    sendMessageWithExpertPanelChain(provider, task, parameters)
                 }
             )
             deferreds.map { it.await() }
@@ -390,9 +390,9 @@ object AIService {
         return ComparisonResult(
             task = task,
             directAnswer = results[0],
-            stepByStepAnswer = results[1],
-            metaPromptAnswer = results[2],
-            expertPanelAnswer = results[3]
+            expertPanelSingleRequest = results[1],
+            expertPanelTwoRequests = results[2],
+            expertPanelChain = results[3]
         )
     }
 
@@ -434,9 +434,10 @@ object AIService {
     }
 
     /**
-     * Send message using expert panel approach
+     * Approach 2: Expert panel - single request
+     * All experts and moderator in one AI call
      */
-    private suspend fun sendMessageWithExpertPanel(
+    private suspend fun sendMessageWithExpertPanelSingleRequest(
         provider: String,
         task: String,
         parameters: AIParameters
@@ -476,6 +477,196 @@ object AIService {
         return sendMessage(
             provider,
             listOf(Message(role = "user", content = expertPanelPrompt)),
+            parameters.copy(maxTokens = parameters.maxTokens ?: 4096)
+        )
+    }
+
+    /**
+     * Approach 3: Expert panel - two requests
+     * First request: create experts and their answers
+     * Second request: moderator synthesizes the answers
+     */
+    private suspend fun sendMessageWithExpertPanelTwoRequests(
+        provider: String,
+        task: String,
+        parameters: AIParameters
+    ): String {
+        // Step 1: Create experts and get their answers
+        val expertsPrompt = """
+Ты AI-система, которая создаёт панель экспертов для решения задачи.
+
+Задача: "$task"
+
+Создай панель из 3-4 экспертов с разными специализациями, подходящими для этой задачи.
+Каждый эксперт должен:
+1. Указать свою специализацию
+2. Дать своё решение задачи
+3. Объяснить свой подход
+
+Формат ответа:
+### Эксперт 1: [специализация]
+[Решение эксперта 1]
+
+### Эксперт 2: [специализация]
+[Решение эксперта 2]
+
+### Эксперт 3: [специализация]
+[Решение эксперта 3]
+        """.trimIndent()
+
+        val expertsAnswers = sendMessage(
+            provider,
+            listOf(Message(role = "user", content = expertsPrompt)),
+            parameters.copy(maxTokens = parameters.maxTokens ?: 3072)
+        )
+
+        // Step 2: Moderator synthesizes the answers
+        val moderatorPrompt = """
+Ты модератор панели экспертов. Эксперты уже высказались по задаче.
+
+Задача: "$task"
+
+Ответы экспертов:
+$expertsAnswers
+
+Твоя задача как модератора:
+- Проанализировать все предложенные решения
+- Выделить сильные стороны каждого подхода
+- Синтезировать финальное решение, объединяющее лучшие идеи
+
+Формат ответа:
+$expertsAnswers
+
+---
+### Итоговое решение (Модератор)
+[Синтез лучших идей от всех экспертов]
+        """.trimIndent()
+
+        return sendMessage(
+            provider,
+            listOf(Message(role = "user", content = moderatorPrompt)),
+            parameters.copy(maxTokens = parameters.maxTokens ?: 4096)
+        )
+    }
+
+    /**
+     * Approach 4: Expert panel - chain
+     * Each expert as separate request + validation + moderator synthesis
+     */
+    private suspend fun sendMessageWithExpertPanelChain(
+        provider: String,
+        task: String,
+        parameters: AIParameters
+    ): String {
+        // Step 1: Determine expert specializations
+        val specializationsPrompt = """
+Для решения следующей задачи определи 3-4 подходящие специализации экспертов.
+
+Задача: "$task"
+
+Ответь списком специализаций, по одной на строку. Только специализации, без номеров и дополнительного текста.
+        """.trimIndent()
+
+        val specializationsResponse = sendMessage(
+            provider,
+            listOf(Message(role = "user", content = specializationsPrompt)),
+            parameters.copy(maxTokens = 200, temperature = 0.5)
+        )
+
+        val specializations = specializationsResponse
+            .lines()
+            .filter { it.isNotBlank() }
+            .take(4)
+
+        // Step 2: Get answer from each expert separately with validation
+        val expertAnswers = mutableListOf<String>()
+
+        for ((index, specialization) in specializations.withIndex()) {
+            val expertNumber = index + 1
+
+            // Get expert's answer
+            val expertPrompt = """
+Ты эксперт со специализацией: $specialization
+
+Задача: "$task"
+
+Дай своё решение задачи, используя свой профессиональный опыт и специализацию.
+Объясни свой подход и почему он эффективен для этой задачи.
+
+Формат ответа:
+### Эксперт $expertNumber: $specialization
+[Твоё решение и объяснение подхода]
+            """.trimIndent()
+
+            val expertAnswer = sendMessage(
+                provider,
+                listOf(Message(role = "user", content = expertPrompt)),
+                parameters.copy(maxTokens = 1024, temperature = 0.7)
+            )
+
+            // Validate expert's answer
+            val validationPrompt = """
+Проверь следующий ответ эксперта на качество и полноту:
+
+$expertAnswer
+
+Задача была: "$task"
+
+Оцени:
+1. Отвечает ли решение на задачу?
+2. Использует ли эксперт свою специализацию?
+3. Достаточно ли полное решение?
+
+Если ответ качественный, просто верни его как есть.
+Если есть недостатки, верни улучшенную версию с сохранением специализации эксперта.
+            """.trimIndent()
+
+            val validatedAnswer = sendMessage(
+                provider,
+                listOf(Message(role = "user", content = validationPrompt)),
+                parameters.copy(maxTokens = 1536, temperature = 0.3)
+            )
+
+            expertAnswers.add(validatedAnswer)
+        }
+
+        // Step 3: Moderator synthesizes all answers
+        val allExpertsText = expertAnswers.joinToString("\n\n")
+
+        val moderatorPrompt = """
+Ты модератор панели экспертов. Все эксперты высказались по задаче.
+
+Задача: "$task"
+
+Ответы экспертов:
+$allExpertsText
+
+Твоя задача как модератора:
+- Проанализировать все предложенные решения
+- Выделить сильные стороны каждого подхода
+- Выявить общие паттерны и различия
+- Синтезировать финальное решение, объединяющее лучшие идеи
+- Дать конкретные рекомендации
+
+Формат ответа:
+$allExpertsText
+
+---
+### Итоговое решение (Модератор)
+
+**Анализ подходов:**
+[Анализ сильных сторон каждого подхода]
+
+**Финальное решение:**
+[Синтез лучших идей от всех экспертов]
+
+**Рекомендации:**
+[Конкретные шаги к реализации]
+        """.trimIndent()
+
+        return sendMessage(
+            provider,
+            listOf(Message(role = "user", content = moderatorPrompt)),
             parameters.copy(maxTokens = parameters.maxTokens ?: 4096)
         )
     }
