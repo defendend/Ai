@@ -497,7 +497,7 @@ object AIService {
         return sendMessage(
             provider,
             listOf(Message(role = "user", content = expertPanelPrompt)),
-            parameters.copy(maxTokens = parameters.maxTokens ?: 4096)
+            parameters.copy(maxTokens = parameters.maxTokens ?: 40960)
         )
     }
 
@@ -537,7 +537,7 @@ object AIService {
         val expertsAnswers = sendMessage(
             provider,
             listOf(Message(role = "user", content = expertsPrompt)),
-            parameters.copy(maxTokens = parameters.maxTokens ?: 3072)
+            parameters.copy(maxTokens = parameters.maxTokens ?: 40960)
         )
 
         // Step 2: Moderator synthesizes the answers
@@ -562,7 +562,7 @@ $expertsAnswers
         val moderatorAnswer = sendMessage(
             provider,
             listOf(Message(role = "user", content = moderatorPrompt)),
-            parameters.copy(maxTokens = parameters.maxTokens ?: 1536)
+            parameters.copy(maxTokens = parameters.maxTokens ?: 8192)
         )
 
         // Combine expert answers with moderator synthesis
@@ -595,7 +595,7 @@ $moderatorAnswer
         val specializationsResponse = sendMessage(
             provider,
             listOf(Message(role = "user", content = specializationsPrompt)),
-            parameters.copy(maxTokens = 200, temperature = 0.5)
+            parameters.copy(maxTokens = 512, temperature = 0.5)
         )
 
         val specializations = specializationsResponse
@@ -626,7 +626,7 @@ $moderatorAnswer
             val expertAnswer = sendMessage(
                 provider,
                 listOf(Message(role = "user", content = expertPrompt)),
-                parameters.copy(maxTokens = 1024, temperature = 0.7)
+                parameters.copy(maxTokens = 8192, temperature = 0.7)
             )
 
             // Validate expert's answer
@@ -649,7 +649,7 @@ $expertAnswer
             val validatedAnswer = sendMessage(
                 provider,
                 listOf(Message(role = "user", content = validationPrompt)),
-                parameters.copy(maxTokens = 1536, temperature = 0.3)
+                parameters.copy(maxTokens = 8192, temperature = 0.3)
             )
 
             expertAnswers.add(validatedAnswer)
@@ -689,7 +689,7 @@ $allExpertsText
         val moderatorAnswer = sendMessage(
             provider,
             listOf(Message(role = "user", content = moderatorPrompt)),
-            parameters.copy(maxTokens = parameters.maxTokens ?: 2048)
+            parameters.copy(maxTokens = parameters.maxTokens ?: 16384)
         )
 
         // Combine all expert answers with moderator synthesis
