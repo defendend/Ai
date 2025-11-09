@@ -24,6 +24,15 @@ object AIService {
     private val client = HttpClient(CIO) {
         engine {
             requestTimeout = 300_000  // 5 minutes for streaming
+
+            // Connection pool settings for parallel requests
+            endpoint {
+                connectTimeout = 60_000  // 60 seconds to establish connection
+                socketTimeout = 300_000  // 5 minutes for socket read
+                connectAttempts = 3      // Retry connection 3 times
+                keepAliveTime = 60_000   // Keep connections alive for 60 seconds
+                maxConnectionsCount = 10 // Allow up to 10 parallel connections
+            }
         }
 
         install(Logging) {
