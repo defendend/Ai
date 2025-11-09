@@ -677,13 +677,17 @@ class BackendApiClient {
 
     suspend fun compareReasoningApproaches(task: String, provider: String = "deepseek"): Result<CompareReasoningResponse> {
         return try {
-            val request = CompareReasoningRequest(task, provider)
+            val requestBody = json.encodeToString(
+                CompareReasoningRequest.serializer(),
+                CompareReasoningRequest(task, provider)
+            )
+
             val response = window.fetch(
                 "$baseUrl/api/chats/compare-reasoning",
                 RequestInit(
                     method = "POST",
                     headers = getAuthHeaders(),
-                    body = JSON.stringify(json.encodeToJsonElement(CompareReasoningRequest.serializer(), request))
+                    body = requestBody
                 )
             ).await()
 
