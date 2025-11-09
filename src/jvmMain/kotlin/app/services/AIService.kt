@@ -51,7 +51,16 @@ object AIService {
         val responseLength: String = "standard",
         val language: String = "auto",
         val includeExamples: Boolean = false,
-        val contentFormat: String = "paragraphs"
+        val contentFormat: String = "paragraphs",
+        val reasoningMode: String = "direct" // direct, step_by_step, meta_prompt, expert_panel
+    )
+
+    data class ComparisonResult(
+        val task: String,
+        val directAnswer: String,
+        val stepByStepAnswer: String,
+        val metaPromptAnswer: String,
+        val expertPanelAnswer: String
     )
 
     suspend fun sendMessage(
@@ -114,7 +123,8 @@ object AIService {
             length = parameters.responseLength,
             language = parameters.language,
             includeExamples = parameters.includeExamples,
-            contentFormat = parameters.contentFormat
+            contentFormat = parameters.contentFormat,
+            reasoningMode = parameters.reasoningMode
         )
 
         // Add system prompt as first message if provided
@@ -254,7 +264,8 @@ object AIService {
             length = parameters.responseLength,
             language = parameters.language,
             includeExamples = parameters.includeExamples,
-            contentFormat = parameters.contentFormat
+            contentFormat = parameters.contentFormat,
+            reasoningMode = parameters.reasoningMode
         )
 
         // Add system prompt as first message if provided
@@ -333,6 +344,121 @@ object AIService {
     }
 
     /**
+     * Compare different reasoning approaches for a given task
+     */
+    suspend fun compareReasoningApproaches(
+        provider: String,
+        task: String,
+        parameters: AIParameters = AIParameters()
+    ): ComparisonResult {
+        val baseMessages = listOf(Message(role = "user", content = task))
+
+        // 1. Direct answer
+        val directAnswer = sendMessage(provider, baseMessages, parameters.copy(reasoningMode = "direct"))
+
+        // 2. Step-by-step (Chain of Thought)
+        val stepByStepAnswer = sendMessage(provider, baseMessages, parameters.copy(reasoningMode = "step_by_step"))
+
+        // 3. Meta-prompting: use AI to create a better prompt
+        val metaPromptAnswer = sendMessageWithMetaPrompt(provider, task, parameters)
+
+        // 4. Expert panel: multiple experts discuss
+        val expertPanelAnswer = sendMessageWithExpertPanel(provider, task, parameters)
+
+        return ComparisonResult(
+            task = task,
+            directAnswer = directAnswer,
+            stepByStepAnswer = stepByStepAnswer,
+            metaPromptAnswer = metaPromptAnswer,
+            expertPanelAnswer = expertPanelAnswer
+        )
+    }
+
+    /**
+     * Send message with meta-prompting: AI creates optimized prompt first
+     */
+    private suspend fun sendMessageWithMetaPrompt(
+        provider: String,
+        task: String,
+        parameters: AIParameters
+    ): String {
+        // Step 1: Ask AI to create an optimized prompt
+        val metaPromptRequest = """
+Ты эксперт по созданию промптов для AI.
+
+Задача пользователя: "$task"
+
+Создай оптимальный промпт для решения этой задачи. Промпт должен:
+- Быть чётким и структурированным
+- Включать необходимый контекст
+- Направлять AI к лучшему решению
+- Использовать эффективные техники промптинга
+
+Ответь только текстом промпта, без дополнительных пояснений.
+        """.trimIndent()
+
+        val optimizedPrompt = sendMessage(
+            provider,
+            listOf(Message(role = "user", content = metaPromptRequest)),
+            parameters.copy(temperature = 0.3)
+        )
+
+        // Step 2: Use optimized prompt to solve the task
+        return sendMessage(
+            provider,
+            listOf(Message(role = "user", content = optimizedPrompt)),
+            parameters
+        )
+    }
+
+    /**
+     * Send message using expert panel approach
+     */
+    private suspend fun sendMessageWithExpertPanel(
+        provider: String,
+        task: String,
+        parameters: AIParameters
+    ): String {
+        val expertPanelPrompt = """
+Ты модератор панели экспертов. Перед тобой задача, которую нужно решить коллективно.
+
+Задача: "$task"
+
+Создай панель из 3-4 экспертов с разными специализациями, подходящими для этой задачи.
+Каждый эксперт должен:
+1. Представиться (имя и специализация)
+2. Дать своё решение задачи
+3. Объяснить свой подход
+
+После того как все эксперты выскажутся, ты как модератор должен:
+- Проанализировать все предложенные решения
+- Выделить сильные стороны каждого подхода
+- Синтезировать финальное решение, объединяющее лучшие идеи
+
+Формат ответа:
+---
+### Эксперт 1: [Имя и специализация]
+[Решение эксперта 1]
+
+### Эксперт 2: [Имя и специализация]
+[Решение эксперта 2]
+
+### Эксперт 3: [Имя и специализация]
+[Решение эксперта 3]
+
+---
+### Итоговое решение (Модератор)
+[Синтез лучших идей от всех экспертов]
+        """.trimIndent()
+
+        return sendMessage(
+            provider,
+            listOf(Message(role = "user", content = expertPanelPrompt)),
+            parameters.copy(maxTokens = parameters.maxTokens ?: 4096)
+        )
+    }
+
+    /**
      * Builds system prompt with format and style instructions
      */
     private fun buildSystemPromptWithFormat(
@@ -343,7 +469,8 @@ object AIService {
         length: String = "standard",
         language: String = "auto",
         includeExamples: Boolean = false,
-        contentFormat: String = "paragraphs"
+        contentFormat: String = "paragraphs",
+        reasoningMode: String = "direct"
     ): String? {
         val instructions = mutableListOf<String>()
 
@@ -351,6 +478,29 @@ object AIService {
         if (basePrompt != null) {
             instructions.add(basePrompt)
         }
+
+        // Reasoning mode instructions
+        val reasoningText = when (reasoningMode) {
+            "step_by_step" -> """
+ВАЖНО: Решай задачу пошагово:
+1. Разбей задачу на логические шаги
+2. Рассуждай по каждому шагу
+3. Покажи промежуточные выводы
+4. Дай финальный ответ
+
+Используй формат:
+**Шаг 1:** [описание]
+**Рассуждение:** [твои мысли]
+**Вывод:** [промежуточный результат]
+
+**Шаг 2:** ...
+
+**Финальный ответ:** [итоговое решение]
+            """.trimIndent()
+            "direct" -> null
+            else -> null
+        }
+        if (reasoningText != null) instructions.add(reasoningText)
 
         // Response style
         val styleText = when (style) {

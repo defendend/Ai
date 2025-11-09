@@ -665,6 +665,76 @@ fun Route.chatRoutes() {
                 call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Failed to send streaming message: ${e.message}"))
             }
         }
+
+            // Compare reasoning approaches
+            post("/compare-reasoning") {
+                // CSRF Protection
+                if (!CsrfProtection.isValidRequest(call)) {
+                    call.respond(HttpStatusCode.Forbidden, ErrorResponse("CSRF validation failed"))
+                    return@post
+                }
+
+                val userId = call.getUserId()
+                if (userId == null) {
+                    call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid token"))
+                    return@post
+                }
+
+                try {
+                    val request = call.receive<CompareReasoningRequest>()
+
+                    // Check provider access
+                    val (providerAllowed, providerError) = checkProviderAccess(userId, request.provider)
+                    if (!providerAllowed) {
+                        call.respond(HttpStatusCode.Forbidden, ErrorResponse(providerError ?: "Provider access denied"))
+                        return@post
+                    }
+
+                    // Check request limit
+                    val (allowed, error) = checkAndIncrementRequestLimit(userId)
+                    if (!allowed) {
+                        call.respond(HttpStatusCode.TooManyRequests, ErrorResponse(error ?: "Request limit exceeded"))
+                        return@post
+                    }
+
+                    // Compare different reasoning approaches
+                    val result = AIService.compareReasoningApproaches(
+                        provider = request.provider,
+                        task = request.task
+                    )
+
+                    // Format response
+                    val response = CompareReasoningResponse(
+                        task = result.task,
+                        approaches = listOf(
+                            ReasoningApproachResult(
+                                name = "Direct Answer",
+                                description = "Прямой ответ без дополнительных инструкций",
+                                answer = result.directAnswer
+                            ),
+                            ReasoningApproachResult(
+                                name = "Step-by-Step (Chain of Thought)",
+                                description = "Пошаговое решение с рассуждениями",
+                                answer = result.stepByStepAnswer
+                            ),
+                            ReasoningApproachResult(
+                                name = "Meta-Prompting",
+                                description = "AI сначала создаёт оптимальный промпт, затем решает задачу",
+                                answer = result.metaPromptAnswer
+                            ),
+                            ReasoningApproachResult(
+                                name = "Expert Panel",
+                                description = "Группа экспертов с разными специализациями обсуждает решение",
+                                answer = result.expertPanelAnswer
+                            )
+                        )
+                    )
+
+                    call.respond(response)
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Failed to compare reasoning approaches: ${e.message}"))
+                }
+            }
         }
     }
 }

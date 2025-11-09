@@ -24,6 +24,10 @@ fun main() {
                     console.log("Initializing admin page")
                     AdminUI()
                 }
+                path == "/reasoning-compare" || path == "/reasoning-compare.html" -> {
+                    console.log("Initializing reasoning comparison page")
+                    ReasoningCompareUI()
+                }
                 else -> {
                     console.log("Unknown path: $path, defaulting to login")
                     window.location.href = "/"

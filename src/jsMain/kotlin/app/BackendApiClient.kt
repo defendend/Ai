@@ -93,6 +93,25 @@ data class LoginResponse(
     val user: UserDTO
 )
 
+@Serializable
+data class CompareReasoningRequest(
+    val task: String,
+    val provider: String = "deepseek"
+)
+
+@Serializable
+data class CompareReasoningResponse(
+    val task: String,
+    val approaches: List<ReasoningApproachResult>
+)
+
+@Serializable
+data class ReasoningApproachResult(
+    val name: String,
+    val description: String,
+    val answer: String
+)
+
 class BackendApiClient {
     private val baseUrl = window.location.origin
     private val json = Json {
@@ -651,6 +670,31 @@ class BackendApiClient {
             }
 
             Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun compareReasoningApproaches(task: String, provider: String = "deepseek"): Result<CompareReasoningResponse> {
+        return try {
+            val request = CompareReasoningRequest(task, provider)
+            val response = window.fetch(
+                "$baseUrl/api/chats/compare-reasoning",
+                RequestInit(
+                    method = "POST",
+                    headers = getAuthHeaders(),
+                    body = JSON.stringify(json.encodeToJsonElement(CompareReasoningRequest.serializer(), request))
+                )
+            ).await()
+
+            if (!response.ok) {
+                val errorText = response.text().await()
+                return Result.failure(Exception(errorText))
+            }
+
+            val responseText = response.text().await()
+            val result = json.decodeFromString<CompareReasoningResponse>(responseText)
+            Result.success(result)
         } catch (e: Exception) {
             Result.failure(e)
         }

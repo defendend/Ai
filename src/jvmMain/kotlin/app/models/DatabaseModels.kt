@@ -217,3 +217,23 @@ fun ResultRow.toMessageDTO() = MessageDTO(
     content = this[Messages.content],
     timestamp = this[Messages.timestamp].toString()
 )
+
+// Reasoning comparison DTOs
+@Serializable
+data class CompareReasoningRequest(
+    val task: String,
+    val provider: String = "deepseek"
+)
+
+@Serializable
+data class CompareReasoningResponse(
+    val task: String,
+    val approaches: List<ReasoningApproachResult>
+)
+
+@Serializable
+data class ReasoningApproachResult(
+    val name: String,
+    val description: String,
+    val answer: String
+)
