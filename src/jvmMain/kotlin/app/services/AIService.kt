@@ -583,34 +583,39 @@ $moderatorAnswer
         task: String,
         parameters: AIParameters
     ): String {
-        // Step 1: Determine expert specializations
-        val specializationsPrompt = """
+        try {
+            // Step 1: Determine expert specializations
+            val specializationsPrompt = """
 Для решения следующей задачи определи 3-4 подходящие специализации экспертов.
 
 Задача: "$task"
 
 Ответь списком специализаций, по одной на строку. Только специализации, без номеров и дополнительного текста.
-        """.trimIndent()
+            """.trimIndent()
 
-        val specializationsResponse = sendMessage(
-            provider,
-            listOf(Message(role = "user", content = specializationsPrompt)),
-            parameters.copy(maxTokens = 512, temperature = 0.5)
-        )
+            println("[Chain] Step 1: Getting specializations...")
+            val specializationsResponse = sendMessage(
+                provider,
+                listOf(Message(role = "user", content = specializationsPrompt)),
+                parameters.copy(maxTokens = 512, temperature = 0.5)
+            )
 
-        val specializations = specializationsResponse
-            .lines()
-            .filter { it.isNotBlank() }
-            .take(4)
+            val specializations = specializationsResponse
+                .lines()
+                .filter { it.isNotBlank() }
+                .take(4)
 
-        // Step 2: Get answer from each expert separately with validation
-        val expertAnswers = mutableListOf<String>()
+            println("[Chain] Found ${specializations.size} specializations: $specializations")
 
-        for ((index, specialization) in specializations.withIndex()) {
-            val expertNumber = index + 1
+            // Step 2: Get answer from each expert separately with validation
+            val expertAnswers = mutableListOf<String>()
 
-            // Get expert's answer
-            val expertPrompt = """
+            for ((index, specialization) in specializations.withIndex()) {
+                val expertNumber = index + 1
+
+                try {
+                    // Get expert's answer
+                    val expertPrompt = """
 Ты эксперт со специализацией: $specialization
 
 Задача: "$task"
@@ -621,16 +626,17 @@ $moderatorAnswer
 Формат ответа:
 ### Эксперт $expertNumber: $specialization
 [Твоё решение и объяснение подхода]
-            """.trimIndent()
+                    """.trimIndent()
 
-            val expertAnswer = sendMessage(
-                provider,
-                listOf(Message(role = "user", content = expertPrompt)),
-                parameters.copy(maxTokens = 8192, temperature = 0.7)
-            )
+                    println("[Chain] Step 2.$expertNumber: Getting expert answer for '$specialization'...")
+                    val expertAnswer = sendMessage(
+                        provider,
+                        listOf(Message(role = "user", content = expertPrompt)),
+                        parameters.copy(maxTokens = 8192, temperature = 0.7)
+                    )
 
-            // Validate expert's answer
-            val validationPrompt = """
+                    // Validate expert's answer
+                    val validationPrompt = """
 Проверь следующий ответ эксперта на качество и полноту:
 
 $expertAnswer
@@ -644,21 +650,27 @@ $expertAnswer
 
 Если ответ качественный, просто верни его как есть.
 Если есть недостатки, верни улучшенную версию с сохранением специализации эксперта.
-            """.trimIndent()
+                    """.trimIndent()
 
-            val validatedAnswer = sendMessage(
-                provider,
-                listOf(Message(role = "user", content = validationPrompt)),
-                parameters.copy(maxTokens = 8192, temperature = 0.3)
-            )
+                    println("[Chain] Step 2.$expertNumber: Validating expert answer...")
+                    val validatedAnswer = sendMessage(
+                        provider,
+                        listOf(Message(role = "user", content = validationPrompt)),
+                        parameters.copy(maxTokens = 8192, temperature = 0.3)
+                    )
 
-            expertAnswers.add(validatedAnswer)
-        }
+                    expertAnswers.add(validatedAnswer)
+                    println("[Chain] Step 2.$expertNumber: Expert answer validated and added")
+                } catch (e: Exception) {
+                    println("[Chain] ERROR in expert $expertNumber: ${e.message}")
+                    throw Exception("Failed to process expert $expertNumber ($specialization): ${e.message}", e)
+                }
+            }
 
-        // Step 3: Moderator synthesizes all answers
-        val allExpertsText = expertAnswers.joinToString("\n\n")
+            // Step 3: Moderator synthesizes all answers
+            val allExpertsText = expertAnswers.joinToString("\n\n")
 
-        val moderatorPrompt = """
+            val moderatorPrompt = """
 Ты модератор панели экспертов. Все эксперты высказались по задаче.
 
 Задача: "$task"
@@ -684,21 +696,28 @@ $allExpertsText
 
 **Рекомендации:**
 [Конкретные шаги к реализации]
-        """.trimIndent()
+            """.trimIndent()
 
-        val moderatorAnswer = sendMessage(
-            provider,
-            listOf(Message(role = "user", content = moderatorPrompt)),
-            parameters.copy(maxTokens = parameters.maxTokens ?: 8192)
-        )
+            println("[Chain] Step 3: Getting moderator synthesis...")
+            val moderatorAnswer = sendMessage(
+                provider,
+                listOf(Message(role = "user", content = moderatorPrompt)),
+                parameters.copy(maxTokens = parameters.maxTokens ?: 8192)
+            )
 
-        // Combine all expert answers with moderator synthesis
-        return """
+            println("[Chain] Step 3: Moderator synthesis complete")
+
+            // Combine all expert answers with moderator synthesis
+            return """
 $allExpertsText
 
 ---
 $moderatorAnswer
-        """.trimIndent()
+            """.trimIndent()
+        } catch (e: Exception) {
+            println("[Chain] FATAL ERROR: ${e.message}")
+            throw Exception("Expert Panel Chain failed: ${e.message}", e)
+        }
     }
 
     /**
