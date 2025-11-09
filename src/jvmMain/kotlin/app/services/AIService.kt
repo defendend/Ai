@@ -13,6 +13,8 @@ import io.ktor.serialization.kotlinx.json.*
 import io.ktor.utils.io.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -353,24 +355,35 @@ object AIService {
     ): ComparisonResult {
         val baseMessages = listOf(Message(role = "user", content = task))
 
-        // 1. Direct answer
-        val directAnswer = sendMessage(provider, baseMessages, parameters.copy(reasoningMode = "direct"))
-
-        // 2. Step-by-step (Chain of Thought)
-        val stepByStepAnswer = sendMessage(provider, baseMessages, parameters.copy(reasoningMode = "step_by_step"))
-
-        // 3. Meta-prompting: use AI to create a better prompt
-        val metaPromptAnswer = sendMessageWithMetaPrompt(provider, task, parameters)
-
-        // 4. Expert panel: multiple experts discuss
-        val expertPanelAnswer = sendMessageWithExpertPanel(provider, task, parameters)
+        // Run all approaches in parallel for speed
+        val results = coroutineScope {
+            val deferreds = listOf(
+                // 1. Direct answer
+                async {
+                    sendMessage(provider, baseMessages, parameters.copy(reasoningMode = "direct"))
+                },
+                // 2. Step-by-step (Chain of Thought)
+                async {
+                    sendMessage(provider, baseMessages, parameters.copy(reasoningMode = "step_by_step"))
+                },
+                // 3. Meta-prompting: use AI to create a better prompt
+                async {
+                    sendMessageWithMetaPrompt(provider, task, parameters)
+                },
+                // 4. Expert panel: multiple experts discuss
+                async {
+                    sendMessageWithExpertPanel(provider, task, parameters)
+                }
+            )
+            deferreds.map { it.await() }
+        }
 
         return ComparisonResult(
             task = task,
-            directAnswer = directAnswer,
-            stepByStepAnswer = stepByStepAnswer,
-            metaPromptAnswer = metaPromptAnswer,
-            expertPanelAnswer = expertPanelAnswer
+            directAnswer = results[0],
+            stepByStepAnswer = results[1],
+            metaPromptAnswer = results[2],
+            expertPanelAnswer = results[3]
         )
     }
 
