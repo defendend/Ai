@@ -710,7 +710,8 @@ fun Route.chatRoutes() {
                     val answer = AIService.getSingleApproach(
                         provider = request.provider,
                         task = request.task,
-                        approach = request.approach
+                        approach = request.approach,
+                        temperature = request.temperature
                     )
 
                     val response = SingleApproachResponse(

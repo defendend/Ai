@@ -18,7 +18,9 @@ class ReasoningCompareUI {
 
     private val directContent: HTMLDivElement
     private val singleContent: HTMLDivElement
-    private val twoContent: HTMLDivElement
+    private val twoContent0: HTMLDivElement
+    private val twoContent07: HTMLDivElement
+    private val twoContent12: HTMLDivElement
     private val chainContent: HTMLDivElement
 
     init {
@@ -31,7 +33,9 @@ class ReasoningCompareUI {
 
         directContent = document.getElementById("directContent") as HTMLDivElement
         singleContent = document.getElementById("singleContent") as HTMLDivElement
-        twoContent = document.getElementById("twoContent") as HTMLDivElement
+        twoContent0 = document.getElementById("twoContent0") as HTMLDivElement
+        twoContent07 = document.getElementById("twoContent07") as HTMLDivElement
+        twoContent12 = document.getElementById("twoContent12") as HTMLDivElement
         chainContent = document.getElementById("chainContent") as HTMLDivElement
 
         // Setup event listeners
@@ -64,21 +68,23 @@ class ReasoningCompareUI {
         hideError()
         showLoadingStates()
 
-        // Launch all 4 approaches in parallel
+        // Launch all approaches in parallel (including 3 temperature variants)
         val approaches = listOf(
-            "direct" to directContent,
-            "single" to singleContent,
-            "two" to twoContent,
-            "chain" to chainContent
+            Triple("direct", directContent, null),
+            Triple("single", singleContent, null),
+            Triple("two", twoContent0, 0.0),
+            Triple("two", twoContent07, 0.7),
+            Triple("two", twoContent12, 1.2),
+            Triple("chain", chainContent, null)
         )
 
         var completedCount = 0
         val totalCount = approaches.size
 
-        approaches.forEach { (approach, content) ->
+        approaches.forEach { (approach, content, temperature) ->
             scope.launch {
                 try {
-                    val result = apiClient.getSingleApproach(task, approach, provider)
+                    val result = apiClient.getSingleApproach(task, approach, provider, temperature)
 
                     result.fold(
                         onSuccess = { response ->
@@ -109,7 +115,7 @@ class ReasoningCompareUI {
     }
 
     private fun showLoadingStates() {
-        listOf(directContent, singleContent, twoContent, chainContent).forEach { content ->
+        listOf(directContent, singleContent, twoContent0, twoContent07, twoContent12, chainContent).forEach { content ->
             content.innerHTML = """
                 <div class="loading-spinner"></div>
                 <p style="text-align: center; margin-top: 10px; color: #666;">Загрузка...</p>
@@ -118,7 +124,7 @@ class ReasoningCompareUI {
     }
 
     private fun hideLoadingStates() {
-        listOf(directContent, singleContent, twoContent, chainContent).forEach { content ->
+        listOf(directContent, singleContent, twoContent0, twoContent07, twoContent12, chainContent).forEach { content ->
             content.innerHTML = """
                 <p style="color: #999; font-style: italic;">Результат недоступен</p>
             """.trimIndent()

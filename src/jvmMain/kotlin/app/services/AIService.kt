@@ -361,6 +361,7 @@ object AIService {
         provider: String,
         task: String,
         approach: String,
+        temperature: Double? = null,
         parameters: AIParameters = AIParameters()
     ): String {
         val baseMessages = listOf(Message(role = "user", content = task))
@@ -368,8 +369,8 @@ object AIService {
         return when (approach) {
             "direct" -> sendMessage(provider, baseMessages, parameters.copy(reasoningMode = "direct"))
             "single" -> sendMessageWithExpertPanelSingleRequest(provider, task, parameters)
-            "two" -> sendMessageWithExpertPanelTwoRequests(provider, task, parameters)
-            "chain" -> sendMessageWithExpertPanelChain(provider, task, parameters)
+            "two" -> sendMessageWithExpertPanelTwoRequests(provider, task, parameters.copy(temperature = temperature))
+            "chain" -> sendMessageWithExpertPanelChain(provider, task, parameters, useDynamicTemperature = true)
             else -> throw IllegalArgumentException("Unknown approach: $approach")
         }
     }
@@ -511,6 +512,9 @@ object AIService {
         task: String,
         parameters: AIParameters
     ): String {
+        // Use temperature from parameters, default to 0.7 if not specified
+        val effectiveTemp = parameters.temperature ?: 0.7
+
         // Step 1: Create experts and get their answers
         val expertsPrompt = """
 Ты AI-система, которая создаёт панель экспертов для решения задачи.
@@ -537,7 +541,7 @@ object AIService {
         val expertsAnswers = sendMessage(
             provider,
             listOf(Message(role = "user", content = expertsPrompt)),
-            parameters.copy(maxTokens = parameters.maxTokens ?: 8192)
+            parameters.copy(maxTokens = parameters.maxTokens ?: 8192, temperature = effectiveTemp)
         )
 
         // Step 2: Moderator synthesizes the answers
@@ -562,7 +566,7 @@ $expertsAnswers
         val moderatorAnswer = sendMessage(
             provider,
             listOf(Message(role = "user", content = moderatorPrompt)),
-            parameters.copy(maxTokens = parameters.maxTokens ?: 8192)
+            parameters.copy(maxTokens = parameters.maxTokens ?: 8192, temperature = effectiveTemp)
         )
 
         // Combine expert answers with moderator synthesis
@@ -577,11 +581,13 @@ $moderatorAnswer
     /**
      * Approach 4: Expert panel - chain
      * Each expert as separate request + moderator synthesis
+     * With dynamic temperature calculation per expert
      */
     private suspend fun sendMessageWithExpertPanelChain(
         provider: String,
         task: String,
-        parameters: AIParameters
+        parameters: AIParameters,
+        useDynamicTemperature: Boolean = false
     ): String {
         try {
             // Step 1: Determine expert specializations
@@ -610,10 +616,24 @@ $moderatorAnswer
             // Step 2: Get answer from each expert separately with validation
             val expertAnswers = mutableListOf<String>()
 
+            // Temperature mapping for dynamic approach:
+            // Expert 1: 0.3 (conservative, deterministic)
+            // Expert 2: 0.7 (balanced)
+            // Expert 3: 1.0 (creative)
+            // Expert 4: 1.2 (very creative, if exists)
+            val temperatureMap = listOf(0.3, 0.7, 1.0, 1.2)
+
             for ((index, specialization) in specializations.withIndex()) {
                 val expertNumber = index + 1
 
                 try {
+                    // Calculate temperature for this expert
+                    val expertTemperature = if (useDynamicTemperature) {
+                        temperatureMap.getOrElse(index) { 0.7 }
+                    } else {
+                        parameters.temperature ?: 0.7
+                    }
+
                     // Get expert's answer
                     val expertPrompt = """
 Ты эксперт со специализацией: $specialization
@@ -628,11 +648,11 @@ $moderatorAnswer
 [Твоё решение и объяснение подхода]
                     """.trimIndent()
 
-                    println("[Chain] Step 2.$expertNumber: Getting expert answer for '$specialization'...")
+                    println("[Chain] Step 2.$expertNumber: Getting expert answer for '$specialization' with temperature=$expertTemperature...")
                     val expertAnswer = sendMessage(
                         provider,
                         listOf(Message(role = "user", content = expertPrompt)),
-                        parameters.copy(maxTokens = 8192, temperature = 0.7)
+                        parameters.copy(maxTokens = 8192, temperature = expertTemperature)
                     )
 
                     expertAnswers.add(expertAnswer)
@@ -674,11 +694,14 @@ $allExpertsText
 [Конкретные шаги к реализации]
             """.trimIndent()
 
-            println("[Chain] Step 3: Getting moderator synthesis...")
+            // Use balanced temperature for moderator (0.5)
+            val moderatorTemperature = if (useDynamicTemperature) 0.5 else (parameters.temperature ?: 0.7)
+
+            println("[Chain] Step 3: Getting moderator synthesis with temperature=$moderatorTemperature...")
             val moderatorAnswer = sendMessage(
                 provider,
                 listOf(Message(role = "user", content = moderatorPrompt)),
-                parameters.copy(maxTokens = parameters.maxTokens ?: 8192)
+                parameters.copy(maxTokens = parameters.maxTokens ?: 8192, temperature = moderatorTemperature)
             )
 
             println("[Chain] Step 3: Moderator synthesis complete")

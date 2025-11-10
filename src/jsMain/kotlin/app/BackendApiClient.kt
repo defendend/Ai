@@ -117,7 +117,8 @@ data class ReasoningApproachResult(
 data class SingleApproachRequest(
     val task: String,
     val approach: String,
-    val provider: String = "deepseek"
+    val provider: String = "deepseek",
+    val temperature: Double? = null
 )
 
 @Serializable
@@ -702,11 +703,11 @@ class BackendApiClient {
         }
     }
 
-    suspend fun getSingleApproach(task: String, approach: String, provider: String = "deepseek"): Result<SingleApproachResponse> {
+    suspend fun getSingleApproach(task: String, approach: String, provider: String = "deepseek", temperature: Double? = null): Result<SingleApproachResponse> {
         return try {
             val requestBody = json.encodeToString(
                 SingleApproachRequest.serializer(),
-                SingleApproachRequest(task, approach, provider)
+                SingleApproachRequest(task, approach, provider, temperature)
             )
 
             val response = window.fetch(
