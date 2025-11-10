@@ -367,7 +367,7 @@ object AIService {
         val baseMessages = listOf(Message(role = "user", content = task))
 
         return when (approach) {
-            "direct" -> sendMessage(provider, baseMessages, parameters.copy(reasoningMode = "direct"))
+            "direct" -> sendMessage(provider, baseMessages, parameters.copy(reasoningMode = "direct", temperature = temperature))
             "single" -> sendMessageWithExpertPanelSingleRequest(provider, task, parameters)
             "two" -> sendMessageWithExpertPanelTwoRequests(provider, task, parameters.copy(temperature = temperature))
             "chain" -> sendMessageWithExpertPanelChain(provider, task, parameters, useDynamicTemperature = true)

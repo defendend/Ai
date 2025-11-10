@@ -16,7 +16,10 @@ class ReasoningCompareUI {
     private val errorContainer: HTMLDivElement
     private val resultsGrid: HTMLDivElement
 
-    private val directContent: HTMLDivElement
+    private val directContent0: HTMLDivElement
+    private val directContent07: HTMLDivElement
+    private val directContent12: HTMLDivElement
+    private val directContent20: HTMLDivElement
     private val singleContent: HTMLDivElement
     private val twoContent0: HTMLDivElement
     private val twoContent07: HTMLDivElement
@@ -31,7 +34,10 @@ class ReasoningCompareUI {
         errorContainer = document.getElementById("errorContainer") as HTMLDivElement
         resultsGrid = document.getElementById("resultsGrid") as HTMLDivElement
 
-        directContent = document.getElementById("directContent") as HTMLDivElement
+        directContent0 = document.getElementById("directContent0") as HTMLDivElement
+        directContent07 = document.getElementById("directContent07") as HTMLDivElement
+        directContent12 = document.getElementById("directContent12") as HTMLDivElement
+        directContent20 = document.getElementById("directContent20") as HTMLDivElement
         singleContent = document.getElementById("singleContent") as HTMLDivElement
         twoContent0 = document.getElementById("twoContent0") as HTMLDivElement
         twoContent07 = document.getElementById("twoContent07") as HTMLDivElement
@@ -68,9 +74,12 @@ class ReasoningCompareUI {
         hideError()
         showLoadingStates()
 
-        // Launch all approaches in parallel (including 3 temperature variants)
+        // Launch all approaches in parallel (9 total: 4 direct + 1 single + 3 two requests + 1 chain)
         val approaches = listOf(
-            Triple("direct", directContent, null),
+            Triple("direct", directContent0, 0.0),
+            Triple("direct", directContent07, 0.7),
+            Triple("direct", directContent12, 1.2),
+            Triple("direct", directContent20, 2.0),
             Triple("single", singleContent, null),
             Triple("two", twoContent0, 0.0),
             Triple("two", twoContent07, 0.7),
@@ -115,7 +124,12 @@ class ReasoningCompareUI {
     }
 
     private fun showLoadingStates() {
-        listOf(directContent, singleContent, twoContent0, twoContent07, twoContent20, chainContent).forEach { content ->
+        listOf(
+            directContent0, directContent07, directContent12, directContent20,
+            singleContent,
+            twoContent0, twoContent07, twoContent20,
+            chainContent
+        ).forEach { content ->
             content.innerHTML = """
                 <div class="loading-spinner"></div>
                 <p style="text-align: center; margin-top: 10px; color: #666;">Загрузка...</p>
@@ -124,7 +138,12 @@ class ReasoningCompareUI {
     }
 
     private fun hideLoadingStates() {
-        listOf(directContent, singleContent, twoContent0, twoContent07, twoContent20, chainContent).forEach { content ->
+        listOf(
+            directContent0, directContent07, directContent12, directContent20,
+            singleContent,
+            twoContent0, twoContent07, twoContent20,
+            chainContent
+        ).forEach { content ->
             content.innerHTML = """
                 <p style="color: #999; font-style: italic;">Результат недоступен</p>
             """.trimIndent()
