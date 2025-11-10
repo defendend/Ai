@@ -20,7 +20,7 @@ class ReasoningCompareUI {
     private val singleContent: HTMLDivElement
     private val twoContent0: HTMLDivElement
     private val twoContent07: HTMLDivElement
-    private val twoContent12: HTMLDivElement
+    private val twoContent20: HTMLDivElement
     private val chainContent: HTMLDivElement
 
     init {
@@ -35,7 +35,7 @@ class ReasoningCompareUI {
         singleContent = document.getElementById("singleContent") as HTMLDivElement
         twoContent0 = document.getElementById("twoContent0") as HTMLDivElement
         twoContent07 = document.getElementById("twoContent07") as HTMLDivElement
-        twoContent12 = document.getElementById("twoContent12") as HTMLDivElement
+        twoContent20 = document.getElementById("twoContent20") as HTMLDivElement
         chainContent = document.getElementById("chainContent") as HTMLDivElement
 
         // Setup event listeners
@@ -74,7 +74,7 @@ class ReasoningCompareUI {
             Triple("single", singleContent, null),
             Triple("two", twoContent0, 0.0),
             Triple("two", twoContent07, 0.7),
-            Triple("two", twoContent12, 1.2),
+            Triple("two", twoContent20, 2.0),
             Triple("chain", chainContent, null)
         )
 
@@ -115,7 +115,7 @@ class ReasoningCompareUI {
     }
 
     private fun showLoadingStates() {
-        listOf(directContent, singleContent, twoContent0, twoContent07, twoContent12, chainContent).forEach { content ->
+        listOf(directContent, singleContent, twoContent0, twoContent07, twoContent20, chainContent).forEach { content ->
             content.innerHTML = """
                 <div class="loading-spinner"></div>
                 <p style="text-align: center; margin-top: 10px; color: #666;">Загрузка...</p>
@@ -124,7 +124,7 @@ class ReasoningCompareUI {
     }
 
     private fun hideLoadingStates() {
-        listOf(directContent, singleContent, twoContent0, twoContent07, twoContent12, chainContent).forEach { content ->
+        listOf(directContent, singleContent, twoContent0, twoContent07, twoContent20, chainContent).forEach { content ->
             content.innerHTML = """
                 <p style="color: #999; font-style: italic;">Результат недоступен</p>
             """.trimIndent()

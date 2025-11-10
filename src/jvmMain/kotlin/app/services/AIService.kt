@@ -619,9 +619,9 @@ $moderatorAnswer
             // Temperature mapping for dynamic approach:
             // Expert 1: 0.3 (conservative, deterministic)
             // Expert 2: 0.7 (balanced)
-            // Expert 3: 1.0 (creative)
-            // Expert 4: 1.2 (very creative, if exists)
-            val temperatureMap = listOf(0.3, 0.7, 1.0, 1.2)
+            // Expert 3: 1.2 (creative)
+            // Expert 4: 2.0 (maximum creativity - DeepSeek MAX, if exists)
+            val temperatureMap = listOf(0.3, 0.7, 1.2, 2.0)
 
             for ((index, specialization) in specializations.withIndex()) {
                 val expertNumber = index + 1
