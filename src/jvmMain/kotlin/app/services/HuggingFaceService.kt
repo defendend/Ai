@@ -98,10 +98,17 @@ object HuggingFaceService {
                 val hfResponse: HuggingFaceResponse = httpResponse.body()
                 response = hfResponse.choices.firstOrNull()?.message?.content
                     ?: throw Exception("No content in HuggingFace response for $modelId")
+
+                // Use actual token count from API if available
+                val tokensGenerated = hfResponse.usage?.completionTokens ?: (response!!.length / 4)
+                return@measureTimeMillis tokensGenerated
             }
 
-            // Estimate tokens (rough approximation: ~4 chars per token)
-            val tokensGenerated = response!!.length / 4
+            // responseTimeMs now contains the token count from the lambda
+            val tokensGenerated = responseTimeMs.toInt()
+
+            // Recalculate actual response time
+            val actualResponseTime = System.currentTimeMillis() - startTime
             val estimatedCost = (tokensGenerated / 1000.0) * info.costPer1kTokens
 
             ModelMetrics(
