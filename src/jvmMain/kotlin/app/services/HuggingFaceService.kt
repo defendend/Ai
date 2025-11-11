@@ -92,6 +92,7 @@ object HuggingFaceService {
             val responseTimeMs = measureTimeMillis {
                 val httpResponse: HttpResponse = client.post("https://api-inference.huggingface.co/models/$modelId") {
                     header("Authorization", "Bearer $apiKey")
+                    header("x-use-cache", "false")
                     contentType(ContentType.Application.Json)
                     setBody(request)
                 }
