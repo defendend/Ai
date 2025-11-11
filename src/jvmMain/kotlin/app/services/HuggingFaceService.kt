@@ -74,23 +74,17 @@ object HuggingFaceService {
 
         return try {
             val request = HuggingFaceRequest(
-                inputs = prompt,
-                parameters = HuggingFaceParameters(
-                    temperature = temperature,
-                    maxNewTokens = maxNewTokens,
-                    topP = 0.9,
-                    doSample = true,
-                    returnFullText = false
-                ),
-                options = HuggingFaceOptions(
-                    useCache = false,
-                    waitForModel = true
-                )
+                model = modelId,
+                messages = listOf(Message(role = "user", content = prompt)),
+                temperature = temperature,
+                maxTokens = maxNewTokens,
+                topP = 0.9,
+                stream = false
             )
 
             var response: String? = null
             val responseTimeMs = measureTimeMillis {
-                val httpResponse: HttpResponse = client.post("https://api-inference.huggingface.co/models/$modelId") {
+                val httpResponse: HttpResponse = client.post("https://router.huggingface.co/v1/chat/completions") {
                     header("Authorization", "Bearer $apiKey")
                     contentType(ContentType.Application.Json)
                     setBody(request)
@@ -101,8 +95,8 @@ object HuggingFaceService {
                     throw Exception("HuggingFace API error for $modelId: ${httpResponse.status} - $errorBody")
                 }
 
-                val responseList: List<HuggingFaceResponse> = httpResponse.body()
-                response = responseList.firstOrNull()?.generatedText
+                val hfResponse: HuggingFaceResponse = httpResponse.body()
+                response = hfResponse.choices.firstOrNull()?.message?.content
                     ?: throw Exception("No content in HuggingFace response for $modelId")
             }
 

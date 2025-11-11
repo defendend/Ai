@@ -91,39 +91,30 @@ data class DeepSeekResponse(
     val model: String
 )
 
-// HuggingFace Inference API
+// HuggingFace Router API (OpenAI-compatible format)
 @Serializable
 data class HuggingFaceRequest(
-    val inputs: String,
-    val parameters: HuggingFaceParameters? = null,
-    val options: HuggingFaceOptions? = null
-)
-
-@Serializable
-data class HuggingFaceParameters(
+    val model: String,
+    val messages: List<Message>,
     val temperature: Double? = null,
-    @SerialName("max_new_tokens")
-    val maxNewTokens: Int? = null,
+    @SerialName("max_tokens")
+    val maxTokens: Int? = null,
     @SerialName("top_p")
     val topP: Double? = null,
-    @SerialName("do_sample")
-    val doSample: Boolean? = true,
-    @SerialName("return_full_text")
-    val returnFullText: Boolean? = false
+    val stream: Boolean = false
 )
 
 @Serializable
-data class HuggingFaceOptions(
-    @SerialName("use_cache")
-    val useCache: Boolean? = false,
-    @SerialName("wait_for_model")
-    val waitForModel: Boolean? = true
+data class HuggingFaceChoice(
+    val message: Message,
+    @SerialName("finish_reason")
+    val finishReason: String? = null
 )
 
 @Serializable
 data class HuggingFaceResponse(
-    @SerialName("generated_text")
-    val generatedText: String
+    val choices: List<HuggingFaceChoice>,
+    val model: String? = null
 )
 
 // Model comparison
