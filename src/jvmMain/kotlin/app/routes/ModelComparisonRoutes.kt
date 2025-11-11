@@ -71,7 +71,7 @@ fun Route.modelComparisonRoutes() {
                         prompt = request.prompt,
                         modelIds = request.models,
                         temperature = 0.7,
-                        maxNewTokens = 1000 // Allow longer responses for better comparison
+                        maxNewTokens = 2048 // Allow longer responses for better comparison
                     )
 
                     println("[ModelComparison] Comparison completed successfully")
@@ -121,7 +121,7 @@ fun Route.modelComparisonRoutes() {
                         modelId = modelId,
                         prompt = body.prompt,
                         temperature = 0.7,
-                        maxNewTokens = 1000
+                        maxNewTokens = 2048
                     )
 
                     println("[ModelTest] Test completed for model $modelId")
