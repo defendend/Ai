@@ -25,10 +25,10 @@ class ModelComparisonUI {
 
         // Get all model checkboxes
         modelCheckboxes = listOf(
-            document.getElementById("model-phi3") as HTMLInputElement,
-            document.getElementById("model-llama32") as HTMLInputElement,
-            document.getElementById("model-mistral") as HTMLInputElement,
-            document.getElementById("model-qwen") as HTMLInputElement
+            document.getElementById("model-gemma") as HTMLInputElement,
+            document.getElementById("model-qwen7b") as HTMLInputElement,
+            document.getElementById("model-qwen32b") as HTMLInputElement,
+            document.getElementById("model-gptoss") as HTMLInputElement
         )
 
         // Setup event listeners
