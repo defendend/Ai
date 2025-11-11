@@ -90,3 +90,63 @@ data class DeepSeekResponse(
     val choices: List<DeepSeekChoice>,
     val model: String
 )
+
+// HuggingFace Inference API
+@Serializable
+data class HuggingFaceRequest(
+    val inputs: String,
+    val parameters: HuggingFaceParameters? = null,
+    val options: HuggingFaceOptions? = null
+)
+
+@Serializable
+data class HuggingFaceParameters(
+    val temperature: Double? = null,
+    @SerialName("max_new_tokens")
+    val maxNewTokens: Int? = null,
+    @SerialName("top_p")
+    val topP: Double? = null,
+    @SerialName("do_sample")
+    val doSample: Boolean? = true,
+    @SerialName("return_full_text")
+    val returnFullText: Boolean? = false
+)
+
+@Serializable
+data class HuggingFaceOptions(
+    @SerialName("use_cache")
+    val useCache: Boolean? = false,
+    @SerialName("wait_for_model")
+    val waitForModel: Boolean? = true
+)
+
+@Serializable
+data class HuggingFaceResponse(
+    @SerialName("generated_text")
+    val generatedText: String
+)
+
+// Model comparison
+@Serializable
+data class ModelMetrics(
+    val modelName: String,
+    val modelSize: String, // e.g., "82M", "1.7B", "7B"
+    val responseTimeMs: Long,
+    val tokensGenerated: Int?,
+    val estimatedCost: Double?, // USD
+    val response: String,
+    val error: String? = null
+)
+
+@Serializable
+data class ModelComparisonRequest(
+    val prompt: String,
+    val models: List<String> // model IDs from HuggingFace
+)
+
+@Serializable
+data class ModelComparisonResult(
+    val prompt: String,
+    val timestamp: Long,
+    val results: List<ModelMetrics>
+)

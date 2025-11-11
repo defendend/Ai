@@ -28,6 +28,10 @@ fun main() {
                     console.log("Initializing reasoning comparison page")
                     ReasoningCompareUI()
                 }
+                path == "/model-comparison" || path == "/model-comparison.html" -> {
+                    console.log("Initializing model comparison page")
+                    ModelComparisonUI()
+                }
                 else -> {
                     console.log("Unknown path: $path, defaulting to login")
                     window.location.href = "/"

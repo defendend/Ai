@@ -6,6 +6,8 @@ import kotlinx.coroutines.await
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonPrimitive
 import org.w3c.dom.get
 import org.w3c.fetch.Headers
 import org.w3c.fetch.RequestInit
@@ -755,6 +757,61 @@ class BackendApiClient {
 
             val responseText = response.text().await()
             val result = json.decodeFromString<CompareReasoningResponse>(responseText)
+            Result.success(result)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Model comparison methods
+    suspend fun getAvailableModels(): Result<List<String>> {
+        return try {
+            val response = window.fetch(
+                "$baseUrl/api/models/available",
+                RequestInit(
+                    method = "GET",
+                    headers = getAuthHeaders()
+                )
+            ).await().checkAuthAndRedirect()
+
+            if (!response.ok) {
+                val errorText = response.text().await()
+                return Result.failure(Exception(errorText))
+            }
+
+            val responseText = response.text().await()
+            val jsonObj = json.parseToJsonElement(responseText).jsonObject
+            val modelsArray = jsonObj["models"]!!.jsonArray
+            val models = modelsArray.map { it.jsonPrimitive.content }
+            Result.success(models)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun compareModels(prompt: String, models: List<String>): Result<ModelComparisonResult> {
+        return try {
+            val requestBody = json.encodeToString(
+                ModelComparisonRequest.serializer(),
+                ModelComparisonRequest(prompt, models)
+            )
+
+            val response = window.fetch(
+                "$baseUrl/api/models/compare",
+                RequestInit(
+                    method = "POST",
+                    headers = getAuthHeaders(),
+                    body = requestBody
+                )
+            ).await().checkAuthAndRedirect()
+
+            if (!response.ok) {
+                val errorText = response.text().await()
+                return Result.failure(Exception(errorText))
+            }
+
+            val responseText = response.text().await()
+            val result = json.decodeFromString<ModelComparisonResult>(responseText)
             Result.success(result)
         } catch (e: Exception) {
             Result.failure(e)

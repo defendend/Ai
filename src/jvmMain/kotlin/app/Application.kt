@@ -4,6 +4,7 @@ import app.database.DatabaseFactory
 import app.routes.adminRoutes
 import app.routes.authRoutes
 import app.routes.chatRoutes
+import app.routes.modelComparisonRoutes
 import app.security.RateLimiters
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -186,5 +187,6 @@ fun Application.module() {
         authRoutes()
         chatRoutes()
         adminRoutes()
+        modelComparisonRoutes()
     }
 }
