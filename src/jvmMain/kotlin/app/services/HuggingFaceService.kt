@@ -44,12 +44,12 @@ object HuggingFaceService {
         }
     }
 
-    // Model information
+    // Model information - using chat-compatible models from Router API
     private val modelInfo = mapOf(
-        "distilbert/distilgpt2" to ModelInfo("82M", 0.0), // Free
-        "bigscience/bloom-560m" to ModelInfo("560M", 0.0), // Free
-        "bigscience/bloom-1b7" to ModelInfo("1.7B", 0.0), // Free
-        "mistralai/Mistral-7B-Instruct-v0.1" to ModelInfo("7B", 0.0) // Free via Inference API
+        "microsoft/Phi-3-mini-4k-instruct" to ModelInfo("3.8B", 0.0), // Free
+        "meta-llama/Llama-3.2-3B-Instruct" to ModelInfo("3B", 0.0), // Free
+        "mistralai/Mistral-7B-Instruct-v0.3" to ModelInfo("7B", 0.0), // Free
+        "Qwen/Qwen2.5-7B-Instruct" to ModelInfo("7B", 0.0) // Free
     )
 
     data class ModelInfo(
