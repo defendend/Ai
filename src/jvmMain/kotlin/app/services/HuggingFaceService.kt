@@ -47,7 +47,7 @@ object HuggingFaceService {
     // Model information - using chat-compatible models from Router API
     private val modelInfo = mapOf(
         "google/gemma-2-2b-it" to ModelInfo("2B", 0.0), // Free - small model
-        "Qwen/Qwen2.5-7B-Instruct-1M" to ModelInfo("7B", 0.0), // Free - medium model
+        "Qwen/Qwen3-4B-Thinking-2507" to ModelInfo("4B", 0.0), // Free - medium model with reasoning
         "Qwen/Qwen2.5-Coder-32B-Instruct" to ModelInfo("32B", 0.0), // Free - large model
         "openai/gpt-oss-120b" to ModelInfo("120B", 0.0) // Free - very large model
     )
