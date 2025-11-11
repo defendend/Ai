@@ -108,13 +108,27 @@ data class HuggingFaceRequest(
 data class HuggingFaceChoice(
     val message: Message,
     @SerialName("finish_reason")
-    val finishReason: String? = null
+    val finishReason: String? = null,
+    val index: Int? = null
+)
+
+@Serializable
+data class HuggingFaceUsage(
+    @SerialName("prompt_tokens")
+    val promptTokens: Int? = null,
+    @SerialName("completion_tokens")
+    val completionTokens: Int? = null,
+    @SerialName("total_tokens")
+    val totalTokens: Int? = null
 )
 
 @Serializable
 data class HuggingFaceResponse(
+    val id: String? = null,
     val choices: List<HuggingFaceChoice>,
-    val model: String? = null
+    val model: String? = null,
+    val created: Long? = null,
+    val usage: HuggingFaceUsage? = null
 )
 
 // Model comparison
