@@ -22,11 +22,11 @@ fun Route.modelComparisonRoutes() {
             get("/available") {
                 try {
                     val models = HuggingFaceService.getAvailableModels()
-                    call.respond(HttpStatusCode.OK, mapOf("models" to models))
+                    call.respond(HttpStatusCode.OK, AvailableModelsResponse(models))
                 } catch (e: Exception) {
                     call.respond(
                         HttpStatusCode.InternalServerError,
-                        mapOf("error" to "Failed to fetch models: ${e.message}")
+                        ErrorResponseSimple("Failed to fetch models: ${e.message}")
                     )
                 }
             }
@@ -36,7 +36,7 @@ fun Route.modelComparisonRoutes() {
                 try {
                     val userId = call.getUserId()
                     if (userId == null) {
-                        call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "User not authenticated"))
+                        call.respond(HttpStatusCode.Unauthorized, ErrorResponseSimple("User not authenticated"))
                         return@post
                     }
 
@@ -44,12 +44,12 @@ fun Route.modelComparisonRoutes() {
 
                     // Validate request
                     if (request.prompt.isBlank()) {
-                        call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Prompt cannot be empty"))
+                        call.respond(HttpStatusCode.BadRequest, ErrorResponseSimple("Prompt cannot be empty"))
                         return@post
                     }
 
                     if (request.models.isEmpty()) {
-                        call.respond(HttpStatusCode.BadRequest, mapOf("error" to "At least one model must be specified"))
+                        call.respond(HttpStatusCode.BadRequest, ErrorResponseSimple("At least one model must be specified"))
                         return@post
                     }
 
@@ -59,10 +59,7 @@ fun Route.modelComparisonRoutes() {
                     if (invalidModels.isNotEmpty()) {
                         call.respond(
                             HttpStatusCode.BadRequest,
-                            mapOf(
-                                "error" to "Invalid models: ${invalidModels.joinToString(", ")}",
-                                "availableModels" to availableModels
-                            )
+                            ErrorResponseSimple("Invalid models: ${invalidModels.joinToString(", ")}")
                         )
                         return@post
                     }
@@ -84,7 +81,7 @@ fun Route.modelComparisonRoutes() {
                     e.printStackTrace()
                     call.respond(
                         HttpStatusCode.InternalServerError,
-                        mapOf("error" to "Failed to compare models: ${e.message}")
+                        ErrorResponseSimple("Failed to compare models: ${e.message}")
                     )
                 }
             }
@@ -94,36 +91,35 @@ fun Route.modelComparisonRoutes() {
                 try {
                     val userId = call.getUserId()
                     if (userId == null) {
-                        call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "User not authenticated"))
+                        call.respond(HttpStatusCode.Unauthorized, ErrorResponseSimple("User not authenticated"))
                         return@post
                     }
 
                     val modelId = call.parameters["modelId"]
-                        ?: return@post call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Model ID is required"))
+                        ?: return@post call.respond(HttpStatusCode.BadRequest, ErrorResponseSimple("Model ID is required"))
 
                     val availableModels = HuggingFaceService.getAvailableModels()
                     if (modelId !in availableModels) {
                         call.respond(
                             HttpStatusCode.BadRequest,
-                            mapOf(
-                                "error" to "Invalid model: $modelId",
-                                "availableModels" to availableModels
-                            )
+                            ErrorResponseSimple("Invalid model: $modelId")
                         )
                         return@post
                     }
 
-                    val body = call.receive<Map<String, String>>()
-                    val prompt = body["prompt"] ?: return@post call.respond(
-                        HttpStatusCode.BadRequest,
-                        mapOf("error" to "Prompt is required")
-                    )
+                    val body = call.receive<TestModelRequest>()
+                    if (body.prompt.isBlank()) {
+                        return@post call.respond(
+                            HttpStatusCode.BadRequest,
+                            ErrorResponseSimple("Prompt is required")
+                        )
+                    }
 
                     println("[ModelTest] Testing model $modelId for user $userId")
 
                     val result = HuggingFaceService.sendToModel(
                         modelId = modelId,
-                        prompt = prompt,
+                        prompt = body.prompt,
                         temperature = 0.7,
                         maxNewTokens = 150
                     )
@@ -135,7 +131,7 @@ fun Route.modelComparisonRoutes() {
                     e.printStackTrace()
                     call.respond(
                         HttpStatusCode.InternalServerError,
-                        mapOf("error" to "Failed to test model: ${e.message}")
+                        ErrorResponseSimple("Failed to test model: ${e.message}")
                     )
                 }
             }

@@ -155,3 +155,18 @@ data class ModelComparisonResult(
     val timestamp: Long,
     val results: List<ModelMetrics>
 )
+
+@Serializable
+data class AvailableModelsResponse(
+    val models: List<String>
+)
+
+@Serializable
+data class TestModelRequest(
+    val prompt: String
+)
+
+@Serializable
+data class ErrorResponseSimple(
+    val error: String
+)
