@@ -29,6 +29,14 @@ data class ContentBlock(
 )
 
 @Serializable
+data class AnthropicUsage(
+    @SerialName("input_tokens")
+    val inputTokens: Int,
+    @SerialName("output_tokens")
+    val outputTokens: Int
+)
+
+@Serializable
 data class AnthropicResponse(
     val id: String,
     val type: String,
@@ -36,7 +44,8 @@ data class AnthropicResponse(
     val content: List<ContentBlock>,
     val model: String,
     @SerialName("stop_reason")
-    val stopReason: String? = null
+    val stopReason: String? = null,
+    val usage: AnthropicUsage? = null
 )
 
 @Serializable
@@ -85,10 +94,21 @@ data class DeepSeekChoice(
 )
 
 @Serializable
+data class DeepSeekUsage(
+    @SerialName("prompt_tokens")
+    val promptTokens: Int,
+    @SerialName("completion_tokens")
+    val completionTokens: Int,
+    @SerialName("total_tokens")
+    val totalTokens: Int
+)
+
+@Serializable
 data class DeepSeekResponse(
     val id: String,
     val choices: List<DeepSeekChoice>,
-    val model: String
+    val model: String,
+    val usage: DeepSeekUsage? = null
 )
 
 // HuggingFace Router API (OpenAI-compatible format)
@@ -169,4 +189,14 @@ data class TestModelRequest(
 @Serializable
 data class ErrorResponseSimple(
     val error: String
+)
+
+// Token usage tracking
+@Serializable
+data class TokenUsageInfo(
+    val promptTokens: Int,
+    val completionTokens: Int,
+    val totalTokens: Int,
+    val model: String,
+    val provider: String
 )

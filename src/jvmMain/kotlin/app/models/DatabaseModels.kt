@@ -55,6 +55,18 @@ object Messages : IntIdTable("messages") {
     val timestamp = timestamp("timestamp").defaultExpression(CurrentTimestamp())
 }
 
+object TokenUsage : IntIdTable("token_usage") {
+    val messageId = reference("message_id", Messages).nullable() // null for streaming messages
+    val chatId = reference("chat_id", Chats)
+    val userId = reference("user_id", Users)
+    val provider = varchar("provider", 50) // "claude" or "deepseek"
+    val model = varchar("model", 100)
+    val promptTokens = integer("prompt_tokens")
+    val completionTokens = integer("completion_tokens")
+    val totalTokens = integer("total_tokens")
+    val timestamp = timestamp("timestamp").defaultExpression(CurrentTimestamp())
+}
+
 // DTO classes for API responses
 @Serializable
 data class UserDTO(
@@ -96,6 +108,18 @@ data class MessageDTO(
     val id: Int,
     val role: String,
     val content: String,
+    val timestamp: String,
+    val tokenUsage: TokenUsageDTO? = null
+)
+
+@Serializable
+data class TokenUsageDTO(
+    val id: Int,
+    val provider: String,
+    val model: String,
+    val promptTokens: Int,
+    val completionTokens: Int,
+    val totalTokens: Int,
     val timestamp: String
 )
 
@@ -215,7 +239,18 @@ fun ResultRow.toMessageDTO() = MessageDTO(
     id = this[Messages.id].value,
     role = this[Messages.role],
     content = this[Messages.content],
-    timestamp = this[Messages.timestamp].toString()
+    timestamp = this[Messages.timestamp].toString(),
+    tokenUsage = null // Will be populated separately if needed
+)
+
+fun ResultRow.toTokenUsageDTO() = TokenUsageDTO(
+    id = this[TokenUsage.id].value,
+    provider = this[TokenUsage.provider],
+    model = this[TokenUsage.model],
+    promptTokens = this[TokenUsage.promptTokens],
+    completionTokens = this[TokenUsage.completionTokens],
+    totalTokens = this[TokenUsage.totalTokens],
+    timestamp = this[TokenUsage.timestamp].toString()
 )
 
 // Reasoning comparison DTOs

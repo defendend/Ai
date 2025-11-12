@@ -449,23 +449,37 @@ fun Route.chatRoutes() {
                     includeExamples = chat[Chats.includeExamples],
                     contentFormat = chat[Chats.contentFormat]
                 )
-                val aiResponse = AIService.sendMessage(provider, allMessages, parameters)
+                val aiResult = AIService.sendMessage(provider, allMessages, parameters)
 
                 // Check if agent goal was achieved
                 val goalAchieved = if (agentType != "none") {
                     val preset = AgentPresets.getPreset(agentType)
                     preset?.completionMarker?.let { marker ->
-                        aiResponse.contains(marker)
+                        aiResult.content.contains(marker)
                     } ?: false
                 } else false
 
-                // Save AI response
+                // Save AI response and token usage
                 val assistantMessageId = dbQuery {
                     val msgId = Messages.insert {
                         it[Messages.chatId] = chatId
                         it[role] = "assistant"
-                        it[content] = aiResponse
+                        it[content] = aiResult.content
                     }[Messages.id].value
+
+                    // Save token usage if available
+                    aiResult.tokenUsage?.let { usage ->
+                        TokenUsage.insert {
+                            it[TokenUsage.messageId] = msgId
+                            it[TokenUsage.chatId] = chatId
+                            it[TokenUsage.userId] = userId
+                            it[TokenUsage.provider] = usage.provider
+                            it[TokenUsage.model] = usage.model
+                            it[TokenUsage.promptTokens] = usage.promptTokens
+                            it[TokenUsage.completionTokens] = usage.completionTokens
+                            it[TokenUsage.totalTokens] = usage.totalTokens
+                        }
+                    }
 
                     // Update chat updatedAt and agentGoalAchieved if needed
                     Chats.update({ Chats.id eq chatId }) {
@@ -795,6 +809,91 @@ fun Route.chatRoutes() {
                     call.respond(response)
                 } catch (e: Exception) {
                     call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Failed to compare reasoning approaches: ${e.message}"))
+                }
+            }
+
+            // Get token usage statistics
+            get("/tokens/stats") {
+                val userId = call.getUserId()
+
+                if (userId == null) {
+                    call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid token"))
+                    return@get
+                }
+
+                try {
+                    val stats = dbQuery {
+                        // Get total tokens per provider
+                        val tokenStats = TokenUsage
+                            .slice(
+                                TokenUsage.provider,
+                                TokenUsage.promptTokens.sum(),
+                                TokenUsage.completionTokens.sum(),
+                                TokenUsage.totalTokens.sum()
+                            )
+                            .select { TokenUsage.userId eq userId }
+                            .groupBy(TokenUsage.provider)
+                            .map { row ->
+                                mapOf(
+                                    "provider" to row[TokenUsage.provider],
+                                    "promptTokens" to (row[TokenUsage.promptTokens.sum()] ?: 0),
+                                    "completionTokens" to (row[TokenUsage.completionTokens.sum()] ?: 0),
+                                    "totalTokens" to (row[TokenUsage.totalTokens.sum()] ?: 0)
+                                )
+                            }
+
+                        mapOf(
+                            "userId" to userId,
+                            "byProvider" to tokenStats,
+                            "total" to mapOf(
+                                "promptTokens" to tokenStats.sumOf { it["promptTokens"] as Long },
+                                "completionTokens" to tokenStats.sumOf { it["completionTokens"] as Long },
+                                "totalTokens" to tokenStats.sumOf { it["totalTokens"] as Long }
+                            )
+                        )
+                    }
+
+                    call.respond(stats)
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Failed to fetch token stats: ${e.message}"))
+                }
+            }
+
+            // Get token usage for a specific chat
+            get("/{chatId}/tokens") {
+                val userId = call.getUserId()
+                val chatId = call.parameters["chatId"]?.toIntOrNull()
+
+                if (userId == null) {
+                    call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid token"))
+                    return@get
+                }
+
+                if (chatId == null) {
+                    call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid chat ID"))
+                    return@get
+                }
+
+                try {
+                    // Verify chat ownership
+                    val chatExists = dbQuery {
+                        Chats.select { (Chats.id eq chatId) and (Chats.userId eq userId) }.count() > 0
+                    }
+
+                    if (!chatExists) {
+                        call.respond(HttpStatusCode.NotFound, ErrorResponse("Chat not found"))
+                        return@get
+                    }
+
+                    val tokens = dbQuery {
+                        TokenUsage.select { TokenUsage.chatId eq chatId }
+                            .orderBy(TokenUsage.timestamp to SortOrder.DESC)
+                            .map { it.toTokenUsageDTO() }
+                    }
+
+                    call.respond(tokens)
+                } catch (e: Exception) {
+                    call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Failed to fetch chat tokens: ${e.message}"))
                 }
             }
         }

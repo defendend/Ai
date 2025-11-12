@@ -1,6 +1,7 @@
 package app.services
 
 import app.*
+import app.TokenUsageInfo
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
@@ -21,6 +22,11 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 object AIService {
+    data class AIResult(
+        val content: String,
+        val tokenUsage: TokenUsageInfo? = null
+    )
+
     private val client = HttpClient(CIO) {
         engine {
             requestTimeout = 300_000  // 5 minutes for streaming
@@ -78,7 +84,7 @@ object AIService {
         provider: String,
         messages: List<Message>,
         parameters: AIParameters = AIParameters()
-    ): String {
+    ): AIResult {
         return when (provider) {
             "claude" -> sendClaudeMessage(messages, parameters)
             "deepseek" -> sendDeepSeekMessage(messages, parameters)
@@ -86,12 +92,13 @@ object AIService {
         }
     }
 
-    private suspend fun sendClaudeMessage(messages: List<Message>, parameters: AIParameters): String {
+    private suspend fun sendClaudeMessage(messages: List<Message>, parameters: AIParameters): AIResult {
         val apiKey = System.getenv("CLAUDE_API_KEY")
             ?: throw IllegalStateException("CLAUDE_API_KEY environment variable is not set")
 
+        val model = "claude-3-5-sonnet-20241022"
         val request = AnthropicRequest(
-            model = "claude-3-5-sonnet-20241022",
+            model = model,
             messages = messages,
             maxTokens = parameters.maxTokens ?: 8192,
             temperature = parameters.temperature,
@@ -114,14 +121,27 @@ object AIService {
             }
 
             val anthropicResponse: AnthropicResponse = response.body()
-            return anthropicResponse.content.firstOrNull()?.text
+            val content = anthropicResponse.content.firstOrNull()?.text
                 ?: throw Exception("No content in Claude response")
+
+            // Extract token usage from response
+            val tokenUsage = anthropicResponse.usage?.let {
+                TokenUsageInfo(
+                    promptTokens = it.inputTokens,
+                    completionTokens = it.outputTokens,
+                    totalTokens = it.inputTokens + it.outputTokens,
+                    model = model,
+                    provider = "claude"
+                )
+            }
+
+            return AIResult(content = content, tokenUsage = tokenUsage)
         } catch (e: Exception) {
             throw Exception("Failed to call Claude API: ${e.message}", e)
         }
     }
 
-    private suspend fun sendDeepSeekMessage(messages: List<Message>, parameters: AIParameters): String {
+    private suspend fun sendDeepSeekMessage(messages: List<Message>, parameters: AIParameters): AIResult {
         val apiKey = System.getenv("DEEPSEEK_API_KEY")
             ?: throw IllegalStateException("DEEPSEEK_API_KEY environment variable is not set")
 
@@ -150,8 +170,9 @@ object AIService {
             ResponseFormat(type = "json_object")
         } else null
 
+        val model = "deepseek-chat"
         val request = DeepSeekRequest(
-            model = "deepseek-chat",
+            model = model,
             messages = messagesWithSystem,
             maxTokens = parameters.maxTokens,
             temperature = parameters.temperature ?: 0.7,
@@ -173,8 +194,21 @@ object AIService {
             }
 
             val deepSeekResponse: DeepSeekResponse = response.body()
-            return deepSeekResponse.choices.firstOrNull()?.message?.content
+            val content = deepSeekResponse.choices.firstOrNull()?.message?.content
                 ?: throw Exception("No content in DeepSeek response")
+
+            // Extract token usage from response
+            val tokenUsage = deepSeekResponse.usage?.let {
+                TokenUsageInfo(
+                    promptTokens = it.promptTokens,
+                    completionTokens = it.completionTokens,
+                    totalTokens = it.totalTokens,
+                    model = model,
+                    provider = "deepseek"
+                )
+            }
+
+            return AIResult(content = content, tokenUsage = tokenUsage)
         } catch (e: Exception) {
             throw Exception("Failed to call DeepSeek API: ${e.message}", e)
         }
@@ -367,7 +401,7 @@ object AIService {
         val baseMessages = listOf(Message(role = "user", content = task))
 
         return when (approach) {
-            "direct" -> sendMessage(provider, baseMessages, parameters.copy(reasoningMode = "direct", temperature = temperature))
+            "direct" -> sendMessage(provider, baseMessages, parameters.copy(reasoningMode = "direct", temperature = temperature)).content
             "single" -> sendMessageWithExpertPanelSingleRequest(provider, task, parameters)
             "two" -> sendMessageWithExpertPanelTwoRequests(provider, task, parameters.copy(temperature = temperature))
             "chain" -> sendMessageWithExpertPanelChain(provider, task, parameters, useDynamicTemperature = true)
@@ -390,7 +424,7 @@ object AIService {
             val deferreds = listOf(
                 // 1. Direct answer
                 async {
-                    sendMessage(provider, baseMessages, parameters.copy(reasoningMode = "direct"))
+                    sendMessage(provider, baseMessages, parameters.copy(reasoningMode = "direct")).content
                 },
                 // 2. Expert panel - single request (all experts + moderator in one call)
                 async {
@@ -444,14 +478,14 @@ object AIService {
             provider,
             listOf(Message(role = "user", content = metaPromptRequest)),
             parameters.copy(temperature = 0.3)
-        )
+        ).content
 
         // Step 2: Use optimized prompt to solve the task
         return sendMessage(
             provider,
             listOf(Message(role = "user", content = optimizedPrompt)),
             parameters
-        )
+        ).content
     }
 
     /**
@@ -499,7 +533,7 @@ object AIService {
             provider,
             listOf(Message(role = "user", content = expertPanelPrompt)),
             parameters.copy(maxTokens = parameters.maxTokens ?: 8192)
-        )
+        ).content
     }
 
     /**
@@ -542,7 +576,7 @@ object AIService {
             provider,
             listOf(Message(role = "user", content = expertsPrompt)),
             parameters.copy(maxTokens = parameters.maxTokens ?: 8192, temperature = effectiveTemp)
-        )
+        ).content
 
         // Step 2: Moderator synthesizes the answers
         val moderatorPrompt = """
@@ -567,7 +601,7 @@ $expertsAnswers
             provider,
             listOf(Message(role = "user", content = moderatorPrompt)),
             parameters.copy(maxTokens = parameters.maxTokens ?: 8192, temperature = effectiveTemp)
-        )
+        ).content
 
         // Combine expert answers with moderator synthesis
         return """
@@ -604,7 +638,7 @@ $moderatorAnswer
                 provider,
                 listOf(Message(role = "user", content = specializationsPrompt)),
                 parameters.copy(maxTokens = 512, temperature = 0.5)
-            )
+            ).content
 
             val specializations = specializationsResponse
                 .lines()
@@ -653,7 +687,7 @@ $moderatorAnswer
                         provider,
                         listOf(Message(role = "user", content = expertPrompt)),
                         parameters.copy(maxTokens = 8192, temperature = expertTemperature)
-                    )
+                    ).content
 
                     expertAnswers.add(expertAnswer)
                     println("[Chain] Step 2.$expertNumber: Expert answer received and added")
@@ -702,7 +736,7 @@ $allExpertsText
                 provider,
                 listOf(Message(role = "user", content = moderatorPrompt)),
                 parameters.copy(maxTokens = parameters.maxTokens ?: 8192, temperature = moderatorTemperature)
-            )
+            ).content
 
             println("[Chain] Step 3: Moderator synthesis complete")
 

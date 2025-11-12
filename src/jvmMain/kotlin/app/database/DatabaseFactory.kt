@@ -15,7 +15,7 @@ object DatabaseFactory {
 
         transaction(database) {
             // Create tables and add missing columns
-            SchemaUtils.createMissingTablesAndColumns(Users, Chats, Messages)
+            SchemaUtils.createMissingTablesAndColumns(Users, Chats, Messages, TokenUsage)
         }
     }
 
