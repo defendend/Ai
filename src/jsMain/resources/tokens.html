@@ -271,7 +271,27 @@
 
         // Check authentication
         if (!authToken) {
-            window.location.href = '/';
+            document.getElementById('statsLoading').style.display = 'none';
+            showError('Вы не авторизованы. Пожалуйста, войдите в систему.');
+            document.querySelector('.container').innerHTML = `
+                <div class="header">
+                    <h1>⚠️ Требуется авторизация</h1>
+                    <p class="subtitle">Пожалуйста, войдите в систему для доступа к статистике токенов</p>
+                </div>
+                <div style="text-align: center; margin-top: 30px;">
+                    <a href="/" style="
+                        display: inline-block;
+                        padding: 15px 40px;
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        text-decoration: none;
+                        border-radius: 8px;
+                        font-weight: 600;
+                        transition: transform 0.3s;
+                    ">Войти в систему</a>
+                </div>
+            `;
+            return;
         }
 
         // Load statistics
