@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Статистика токенов - AI Chat</title>
+    <script>console.log('[TOKENS] HTML HEAD loaded, URL:', window.location.href);</script>
     <style>
         * {
             margin: 0;
@@ -266,11 +267,14 @@
     </div>
 
     <script>
+        console.log('[TOKENS] Page loaded, starting initialization...');
         const API_BASE = window.location.protocol + '//' + window.location.host;
         let authToken = localStorage.getItem('authToken');
+        console.log('[TOKENS] Auth token exists:', !!authToken);
 
         // Check authentication
         if (!authToken) {
+            console.log('[TOKENS] No auth token, showing login message');
             document.getElementById('statsLoading').style.display = 'none';
             showError('Вы не авторизованы. Пожалуйста, войдите в систему.');
             document.querySelector('.container').innerHTML = `
